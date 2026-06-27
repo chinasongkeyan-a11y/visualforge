@@ -194,13 +194,6 @@ export function drawBarChart(
   const font = theme.fontFamily;
   const progress = getAnimProgress(localTime, duration);
 
-  // Resolve defaults for optional props
-  const barWidth = typeof props.barWidth === 'number' ? props.barWidth : 0.6;
-  const barGap = typeof props.barGap === 'number' ? props.barGap : 40;
-  const showValues = props.showValues !== false;
-  const unit = props.unit || '';
-  const animation = props.animation || 'grow';
-
   // Background
   ctx.fillStyle = theme.bgColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -209,22 +202,23 @@ export function drawBarChart(
 
   const padding = { top: 120, right: 80, bottom: 140, left: 80 };
   const chartWidth = canvas.width - padding.left - padding.right;
+  const chartHeight = canvas.height - padding.top - padding.bottom;
 
   // Title
   ctx.font = `bold ${theme.subtitleFontSize}px ${font}`;
   ctx.fillStyle = theme.textColor;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText(props.title || '', padding.left, 60);
+  ctx.fillText(props.title, padding.left, 60);
 
   // Calculate max value
   const dataMax = Math.max(...props.data.map((d) => d.value));
   const maxValue = props.maxValue > 0 ? props.maxValue : dataMax * 1.1;
 
   // Bar layout
-  const totalGap = barGap * (props.data.length - 1);
+  const totalGap = props.barGap * (props.data.length - 1);
   const barSlotWidth = (chartWidth - totalGap) / props.data.length;
-  const barW = barSlotWidth * barWidth;
+  const barW = barSlotWidth * props.barWidth;
 
   const baseY = canvas.height - padding.bottom;
   const chartTop = padding.top + 80;
@@ -242,14 +236,14 @@ export function drawBarChart(
 
   // Draw bars
   props.data.forEach((item, i) => {
-    const slotStart = padding.left + i * (barSlotWidth + barGap);
+    const slotStart = padding.left + i * (barSlotWidth + props.barGap);
     const barX = slotStart + (barSlotWidth - barW) / 2;
     const fullBarHeight = (item.value / maxValue) * (baseY - chartTop);
 
     let barHeight: number;
     let barOffsetX = 0;
 
-    if (animation === 'grow') {
+    if (props.animation === 'grow') {
       barHeight = fullBarHeight * EASINGS.easeOut(progress);
     } else {
       // slideIn
@@ -265,14 +259,14 @@ export function drawBarChart(
     ctx.fill();
 
     // Value on top
-    if (showValues && progress > 0.5) {
+    if (props.showValues && progress > 0.5) {
       const valueAlpha = clamp01((progress - 0.5) * 2);
       ctx.globalAlpha *= valueAlpha;
       ctx.font = `bold ${theme.bodyFontSize}px ${font}`;
       ctx.fillStyle = theme.textColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
-      const valueText = `${item.value}${unit}`;
+      const valueText = `${item.value}${props.unit}`;
       ctx.fillText(valueText, barX + barW / 2 + barOffsetX, barY - 10);
       ctx.globalAlpha /= valueAlpha;
     }
