@@ -4,25 +4,21 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: '新应用 | 扣子编程',
-    template: '%s | 扣子编程',
+    default: 'VisualForge | 视觉动画视频渲染平台',
+    template: '%s | VisualForge',
   },
   description:
-    '扣子编程是一款一站式云端 Vibe Coding 开发平台。通过对话轻松构建智能体、工作流和网站，实现从创意到上线的无缝衔接。',
+    'VisualForge 是一个代码驱动的视觉动画视频渲染平台，通过可视化时间线编辑器编排动画效果，使用 node-canvas 逐帧渲染并输出 MP4 文件。',
   keywords: [
-    '扣子编程',
-    'Coze Code',
-    'Vibe Coding',
-    'AI 编程',
-    '智能体搭建',
-    '工作流搭建',
-    '网站搭建',
-    '网站部署',
-    '全栈开发',
-    'AI 工程师',
+    'VisualForge',
+    '视频渲染',
+    '动画制作',
+    'node-canvas',
+    'MP4导出',
+    '时间线编辑器',
   ],
-  authors: [{ name: 'Coze Code Team', url: 'https://code.coze.cn' }],
-  generator: 'Coze Code',
+  authors: [{ name: 'VisualForge' }],
+  generator: 'VisualForge',
   // icons: {
   //   icon: '',
   // },

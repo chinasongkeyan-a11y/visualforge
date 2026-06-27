@@ -8,28 +8,77 @@
 - **UI 组件**: shadcn/ui (基于 Radix UI)
 - **Styling**: Tailwind CSS 4
 
+## 项目概述
+
+**VisualForge** — 代码驱动的视觉动画视频渲染平台。用户通过可视化时间线编辑器编排动画效果，系统使用 @napi-rs/canvas 逐帧渲染并输出 MP4 文件，同时提供 RESTful API 供程序化调用。
+
 ## 目录结构
 
 ```
-├── public/                 # 静态资源
-├── scripts/                # 构建与启动脚本
-│   ├── build.sh            # 构建脚本
-│   ├── dev.sh              # 开发环境启动脚本
-│   ├── prepare.sh          # 预处理脚本
-│   └── start.sh            # 生产环境启动脚本
+├── public/                     # 静态资源
+├── scripts/                    # 构建与启动脚本
+│   ├── build.sh / dev.sh / start.sh
 ├── src/
-│   ├── app/                # 页面路由与布局
-│   ├── components/ui/      # Shadcn UI 组件库
-│   ├── hooks/              # 自定义 Hooks
-│   ├── lib/                # 工具库
-│   │   └── utils.ts        # 通用工具函数 (cn)
-│   └── server.ts           # 自定义服务端入口
-├── next.config.ts          # Next.js 配置
-├── package.json            # 项目依赖管理
-└── tsconfig.json           # TypeScript 配置
+│   ├── app/                    # 页面路由与布局
+│   │   ├── page.tsx            # 首页（产品介绍）
+│   │   ├── editor/page.tsx     # 编辑器页面（核心）
+│   │   ├── projects/page.tsx   # 项目列表
+│   │   ├── docs/page.tsx       # API 文档
+│   │   ├── api/                # 后端 API 路由
+│   │   │   ├── render/route.ts           # POST 提交渲染任务
+│   │   │   ├── render/[id]/status/route.ts # GET 查询渲染状态
+│   │   │   ├── preview-frame/route.ts    # POST 预览单帧
+│   │   │   ├── themes/route.ts           # GET 主题列表
+│   │   │   └── segment-types/route.ts    # GET 片段类型 Schema
+│   │   ├── globals.css        # 全局样式
+│   │   └── layout.tsx         # 根布局
+│   ├── components/             # React 组件
+│   │   ├── ui/                 # shadcn/ui 组件库
+│   │   └── editor/            # 编辑器组件
+│   │       ├── toolbar.tsx           # 顶部工具栏
+│   │       ├── segment-library.tsx   # 左侧片段库
+│   │       ├── timeline.tsx          # 时间线轨道
+│   │       ├── preview-canvas.tsx    # 实时预览器
+│   │       └── property-editor.tsx   # 属性编辑器
+│   ├── hooks/
+│   │   └── use-editor.ts       # 编辑器状态管理 Hook
+│   ├── lib/                    # 核心库
+│   │   ├── types.ts            # 核心类型定义（Project/Segment/Theme等）
+│   │   ├── themes.ts           # 内置主题（Tech Blue / Dark Mode）
+│   │   ├── segment-schemas.ts  # 5种片段类型的属性Schema
+│   │   ├── easing.ts           # 缓动函数
+│   │   ├── project-storage.ts  # localStorage 项目管理
+│   │   ├── utils.ts            # 通用工具函数 (cn)
+│   │   ├── renderer/           # 统一渲染引擎（前后端共用）
+│   │   │   ├── context.ts      # 渲染上下文（Canvas适配层）
+│   │   │   ├── transitions.ts  # 转场动画
+│   │   │   ├── segments.ts     # 5种片段绘制逻辑
+│   │   │   └── index.ts        # 渲染入口（renderFrame/getProjectDuration）
+│   │   └── server/             # 服务端专用模块
+│   │       ├── render-engine.ts # 逐帧渲染引擎（node-canvas）
+│   │       ├── video-encoder.ts # ffmpeg 编码
+│   │       ├── storage.ts      # S3 对象存储上传
+│   │       ├── render-store.ts # 渲染任务状态管理（内存Map）
+│   │       └── pipeline.ts     # 完整渲染管线编排
+│   └── server.ts              # 自定义服务端入口
+├── next.config.ts             # Next.js 配置（含native模块externals）
+├── package.json
+└── tsconfig.json
 ```
 
-- 项目文件（如 app 目录、pages 目录、components 等）默认初始化到 `src/` 目录下。
+## 渲染架构
+
+前后端共用一套 TypeScript 渲染器（`src/lib/renderer/`），通过 `RenderContext` 适配层同时支持浏览器 HTMLCanvasElement 和服务端 @napi-rs/canvas。
+
+渲染流程：项目JSON → 解析时间线 → 逐帧Canvas绘制 → PNG序列 → ffmpeg编码 → S3上传 → 返回URL
+
+## 关键技术点
+
+- **@napi-rs/canvas**：纯Node.js Canvas，无需浏览器，在 next.config.ts 中已 externals
+- **系统 ffmpeg**：沙箱自带 ffmpeg，通过 `which ffmpeg` 获取路径，不使用 @ffmpeg-installer
+- **S3 存储**：使用 coze-coding-dev-sdk 的 S3Storage 上传 MP4
+- **中文字体**：系统自带 WenQuanYi Micro Hei（`/usr/share/fonts/truetype/wqy/wqy-microhei.ttc`）
+- **Turbopack root**：next.config.ts 中设置 `turbopack.root = path.resolve(__dirname)`
 
 ## 包管理规范
 

@@ -1,8 +1,7 @@
 import type { NextConfig } from 'next';
+import path from 'path';
 
 const nextConfig: NextConfig = {
-  // outputFileTracingRoot: path.resolve(__dirname, '../../'),  // Uncomment and add 'import path from "path"' if needed
-  /* config options here */
   allowedDevOrigins: ['*.dev.coze.site'],
   images: {
     remotePatterns: [
@@ -12,6 +11,14 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+  },
+  // Externalize native Node.js modules that can't be bundled by webpack/turbopack
+  serverExternalPackages: [
+    '@napi-rs/canvas',
+    'coze-coding-dev-sdk',
+  ],
+  turbopack: {
+    root: path.resolve(__dirname),
   },
 };
 
