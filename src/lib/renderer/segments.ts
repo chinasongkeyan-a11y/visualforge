@@ -213,12 +213,14 @@ export function drawBarChart(
 
   // Calculate max value
   const dataMax = Math.max(...props.data.map((d) => d.value));
-  const maxValue = props.maxValue > 0 ? props.maxValue : dataMax * 1.1;
+  const maxValue = props.maxValue && props.maxValue > 0 ? props.maxValue : dataMax * 1.1;
 
-  // Bar layout
-  const totalGap = props.barGap * (props.data.length - 1);
+  // Bar layout (defaults: barWidth=0.6, barGap=20)
+  const barWidth = props.barWidth ?? 0.6;
+  const barGap = props.barGap ?? 20;
+  const totalGap = barGap * (props.data.length - 1);
   const barSlotWidth = (chartWidth - totalGap) / props.data.length;
-  const barW = barSlotWidth * props.barWidth;
+  const barW = barSlotWidth * barWidth;
 
   const baseY = canvas.height - padding.bottom;
   const chartTop = padding.top + 80;
@@ -236,7 +238,7 @@ export function drawBarChart(
 
   // Draw bars
   props.data.forEach((item, i) => {
-    const slotStart = padding.left + i * (barSlotWidth + props.barGap);
+    const slotStart = padding.left + i * (barSlotWidth + barGap);
     const barX = slotStart + (barSlotWidth - barW) / 2;
     const fullBarHeight = (item.value / maxValue) * (baseY - chartTop);
 
