@@ -1,5 +1,5 @@
 // ============================================================
-// Full Render Pipeline: frames → ffmpeg → S3 upload
+// Full Render Pipeline: frames → ffmpeg → local storage
 // ============================================================
 
 import path from 'path';
@@ -42,8 +42,8 @@ export async function executeRenderPipeline(renderId: string): Promise<void> {
     const mp4Path = path.join(tempDir, 'output.mp4');
     await encodeVideo(frameDir, project.canvas.fps, mp4Path);
 
-    // Phase 4: Upload to S3
-    const fileName = `renders/${renderId}.mp4`;
+    // Phase 4: Save to local storage
+    const fileName = `${renderId}.mp4`;
     const videoUrl = await uploadVideo(mp4Path, fileName);
 
     // Phase 5: Complete

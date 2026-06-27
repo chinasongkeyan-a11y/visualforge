@@ -1,46 +1,61 @@
 // ============================================================
-// S3 Object Storage - uploads MP4 to S3 and returns signed URL
+// Local File Storage - saves MP4 to local renders directory
 // ============================================================
 
-import { S3Storage } from 'coze-coding-dev-sdk';
 import fs from 'fs';
+import path from 'path';
 
-let storageInstance: S3Storage | null = null;
+/** Directory where rendered MP4 files are stored */
+const RENDERS_DIR = process.env.RENDERS_DIR || '/app/renders';
 
-function getStorage(): S3Storage {
-  if (!storageInstance) {
-    storageInstance = new S3Storage({
-      endpointUrl: process.env.COZE_BUCKET_ENDPOINT_URL,
-      accessKey: '',
-      secretKey: '',
-      bucketName: process.env.COZE_BUCKET_NAME,
-      region: 'cn-beijing',
-    });
+/**
+ * Ensure the renders directory exists.
+ */
+function ensureRendersDir(): void {
+  if (!fs.existsSync(RENDERS_DIR)) {
+    fs.mkdirSync(RENDERS_DIR, { recursive: true });
   }
-  return storageInstance;
 }
 
 /**
- * Upload an MP4 file to S3 and return a signed URL.
- * @param filePath - Local file path of the MP4
- * @param fileName - Desired file name (SDK will add UUID prefix)
- * @returns Signed URL for accessing the video
+ * Save an MP4 file to local storage and return a public URL path.
+ * @param filePath - Local file path of the MP4 (temporary)
+ * @param fileName - Desired file name (e.g. "r_abc123.mp4")
+ * @returns Relative URL path for accessing the video (e.g. "/api/video/r_abc123.mp4")
  */
 export async function uploadVideo(filePath: string, fileName: string): Promise<string> {
-  const storage = getStorage();
-  const fileContent = fs.readFileSync(filePath);
+  ensureRendersDir();
 
-  const fileKey = await storage.uploadFile({
-    fileContent,
-    fileName,
-    contentType: 'video/mp4',
-  });
+  const destPath = path.join(RENDERS_DIR, fileName);
 
-  // Generate a signed URL valid for 7 days
-  const signedUrl = await storage.generatePresignedUrl({
-    key: fileKey,
-    expireTime: 604800, // 7 days
-  });
+  // Move the file to the renders directory
+  const data = fs.readFileSync(filePath);
+  fs.writeFileSync(destPath, data);
 
-  return signedUrl;
+  // Clean up the temporary source file
+  try {
+    fs.unlinkSync(filePath);
+  } catch {
+    // Source file may already be removed, ignore
+  }
+
+  // Return a relative URL that the /api/video/[id] route will serve
+  const urlPath = `/api/video/${fileName}`;
+  return urlPath;
+}
+
+/**
+ * Get the local file path for a given video file name.
+ * @param fileName - File name (e.g. "r_abc123.mp4")
+ * @returns Absolute file path
+ */
+export function getVideoFilePath(fileName: string): string {
+  return path.join(RENDERS_DIR, fileName);
+}
+
+/**
+ * Check if a video file exists.
+ */
+export function videoExists(fileName: string): boolean {
+  return fs.existsSync(path.join(RENDERS_DIR, fileName));
 }

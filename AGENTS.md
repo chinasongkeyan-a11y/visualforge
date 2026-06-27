@@ -16,6 +16,9 @@
 
 ```
 ├── public/                     # 静态资源
+├── Dockerfile                 # Docker 镜像构建文件
+├── docker-compose.yml         # Docker Compose 编排
+├── .dockerignore              # Docker 构建排除
 ├── scripts/                    # 构建与启动脚本
 │   ├── build.sh / dev.sh / start.sh
 ├── src/
@@ -57,7 +60,7 @@
 │   │   └── server/             # 服务端专用模块
 │   │       ├── render-engine.ts # 逐帧渲染引擎（node-canvas）
 │   │       ├── video-encoder.ts # ffmpeg 编码
-│   │       ├── storage.ts      # S3 对象存储上传
+│   │       ├── storage.ts      # 本地文件存储（MP4保存到 /app/renders）
 │   │       ├── render-store.ts # 渲染任务状态管理（内存Map）
 │   │       └── pipeline.ts     # 完整渲染管线编排
 │   └── server.ts              # 自定义服务端入口
@@ -70,13 +73,14 @@
 
 前后端共用一套 TypeScript 渲染器（`src/lib/renderer/`），通过 `RenderContext` 适配层同时支持浏览器 HTMLCanvasElement 和服务端 @napi-rs/canvas。
 
-渲染流程：项目JSON → 解析时间线 → 逐帧Canvas绘制 → PNG序列 → ffmpeg编码 → S3上传 → 返回URL
+渲染流程：项目JSON → 解析时间线 → 逐帧Canvas绘制 → PNG序列 → ffmpeg编码 → 本地文件存储 → 返回URL
 
 ## 关键技术点
 
 - **@napi-rs/canvas**：纯Node.js Canvas，无需浏览器，在 next.config.ts 中已 externals
 - **系统 ffmpeg**：沙箱自带 ffmpeg，通过 `which ffmpeg` 获取路径，不使用 @ffmpeg-installer
-- **S3 存储**：使用 coze-coding-dev-sdk 的 S3Storage 上传 MP4
+- **本地文件存储**：MP4 保存到 `/app/renders/` 目录，通过 `/api/video/[id]` 路由提供访问（支持 Range 请求）
+- **Docker 部署**：提供 Dockerfile + docker-compose.yml，基于 node:24-slim，内置 canvas 原生库 + ffmpeg + 中文字体
 - **中文字体**：系统自带 WenQuanYi Micro Hei（`/usr/share/fonts/truetype/wqy/wqy-microhei.ttc`）
 - **Turbopack root**：next.config.ts 中设置 `turbopack.root = path.resolve(__dirname)`
 

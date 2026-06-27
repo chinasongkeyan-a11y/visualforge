@@ -15,7 +15,6 @@ const nextConfig: NextConfig = {
   // Externalize native Node.js modules that can't be bundled by webpack/turbopack
   serverExternalPackages: [
     '@napi-rs/canvas',
-    'coze-coding-dev-sdk',
   ],
   turbopack: {
     root: path.resolve(__dirname),
