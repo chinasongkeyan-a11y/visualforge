@@ -138,10 +138,10 @@ function buildBarChartProps(
 ): BarChartProps {
   return {
     title: seg.title ?? '',
-    data: (seg.data ?? []).map((d) => ({
+    data: (seg.data ?? []).map((d, i) => ({
       label: d.label,
       value: d.value,
-      color: d.color ?? '',
+      color: d.color ?? t.chartColors[i % t.chartColors.length],
     })),
     maxValue: 0,
     unit: seg.unit ?? '',
@@ -158,10 +158,10 @@ function buildPieChartProps(
 ): PieChartProps {
   return {
     title: seg.title ?? '',
-    data: (seg.data ?? []).map((d) => ({
+    data: (seg.data ?? []).map((d, i) => ({
       label: d.label,
       value: d.value,
-      color: d.color ?? '',
+      color: d.color ?? t.chartColors[i % t.chartColors.length],
     })),
     showLabels: true,
     showPercent: true,
@@ -178,10 +178,10 @@ function buildLineChartProps(
 ): LineChartProps {
   return {
     title: seg.title ?? '',
-    series: (seg.series ?? []).map((s) => ({
+    series: (seg.series ?? []).map((s, i) => ({
       name: s.name,
       data: s.data,
-      color: s.color ?? '',
+      color: s.color ?? t.chartColors[i % t.chartColors.length],
     })),
     xLabels: [],
     yMax: 0,

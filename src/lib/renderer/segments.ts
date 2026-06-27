@@ -32,6 +32,138 @@ function getAnimProgress(localTime: number, duration: number): number {
 }
 
 // ============================================================
+// P0+P1 Visual Effects Library
+// ============================================================
+
+/** Overshoot easing - goes past 1 then settles back (for bouncy animations) */
+function overshoot(t: number): number {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
+/** Draw glowing text with configurable shadow blur */
+function drawGlowText(
+  ctx: RenderCtx,
+  text: string,
+  x: number,
+  y: number,
+  opts: {
+    glowColor: string;
+    glowBlur: number;
+    fillStyle?: string;
+    color?: string;
+    font?: string;
+    blur?: number;
+    alpha?: number;
+    textAlign?: CanvasTextAlign;
+  },
+): void {
+  ctx.save();
+  ctx.shadowColor = opts.glowColor;
+  ctx.shadowBlur = opts.glowBlur;
+  if (opts.font) { ctx.font = opts.font; }
+  if (opts.textAlign) { ctx.textAlign = opts.textAlign; }
+  if (opts.alpha !== undefined) { ctx.globalAlpha = opts.alpha; }
+  ctx.fillStyle = opts.fillStyle || opts.color || '#ffffff';
+  ctx.fillText(text, x, y);
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+/** Draw a sweep light effect - a diagonal light band sweeping across the canvas */
+function drawSweepLight(ctx: RenderCtx, canvas: CanvasInfo, progress: number, color = '#ffffff'): void {
+  if (progress <= 0 || progress >= 1) return;
+  const sweepX = -canvas.width * 0.3 + progress * canvas.width * 1.6;
+  const sweepWidth = canvas.width * 0.25;
+  const alpha = Math.sin(progress * Math.PI) * 0.25;
+
+  ctx.save();
+  const grad = ctx.createLinearGradient(sweepX - sweepWidth, 0, sweepX + sweepWidth, 0);
+  grad.addColorStop(0, withAlpha(color, 0));
+  grad.addColorStop(0.5, withAlpha(color, alpha));
+  grad.addColorStop(1, withAlpha(color, 0));
+  ctx.fillStyle = grad;
+  // Skew the sweep band at 15 degrees for a dynamic look
+  ctx.beginPath();
+  const skewOffset = canvas.height * 0.15;
+  ctx.moveTo(sweepX - sweepWidth, -skewOffset);
+  ctx.lineTo(sweepX + sweepWidth, -skewOffset);
+  ctx.lineTo(sweepX + sweepWidth * 0.6, canvas.height + skewOffset);
+  ctx.lineTo(sweepX - sweepWidth * 0.6, canvas.height + skewOffset);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+/** Particle burst - particles radiating outward from a center point */
+interface BurstParticle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  size: number;
+  color: string;
+}
+
+function drawParticleBurst(
+  ctx: RenderCtx,
+  cx: number,
+  cy: number,
+  progress: number,
+  count: number,
+  radius: number,
+  colors: string[],
+): void {
+  if (progress <= 0 || progress >= 1) return;
+  const fadeOut = 1 - progress;
+  ctx.save();
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2 + i * 0.7;
+    const dist = radius * progress * (0.8 + (i % 3) * 0.15);
+    const px = cx + Math.cos(angle) * dist;
+    const py = cy + Math.sin(angle) * dist;
+    const pSize = (3 + (i % 4) * 2) * fadeOut;
+    const color = colors[i % colors.length];
+
+    ctx.fillStyle = withAlpha(color, fadeOut);
+    ctx.shadowColor = color;
+    ctx.shadowBlur = pSize * 2;
+    ctx.beginPath();
+    ctx.arc(px, py, pSize, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+/** Draw a glowing dot at a point (for line chart draw head) */
+function drawGlowDot(
+  ctx: RenderCtx,
+  x: number,
+  y: number,
+  radius: number,
+  color: string,
+  glowRadius: number,
+): void {
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = glowRadius;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  // Inner white core
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(x, y, radius * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// ============================================================
 // TextCard
 // ============================================================
 export function drawTextCard(
@@ -139,6 +271,9 @@ export function drawTextCard(
   }
 
   ctx.restore();
+
+  // Sweep light effect during entry phase
+  drawSweepLight(ctx, canvas, progress, theme.primaryColor);
 }
 
 /** Draw text with emphasis portion highlighted */
@@ -246,41 +381,71 @@ export function drawBarChart(
     ctx.stroke();
   }
 
-  // Draw bars
+  // Draw bars with stagger + overshoot
   props.data.forEach((item, i) => {
     const slotStart = padding.left + i * (barSlotWidth + barGap);
     const barX = slotStart + (barSlotWidth - barW) / 2;
     const fullBarHeight = (item.value / maxValue) * (baseY - chartTop);
 
+    // Stagger: each bar starts slightly later
+    const staggerDelay = i * 0.12;
+    const staggeredProgress = clamp01((progress - staggerDelay) / (1 - staggerDelay));
+
     let barHeight: number;
     let barOffsetX = 0;
+    let glowIntensity = 0;
 
     if (props.animation === 'grow') {
-      barHeight = fullBarHeight * EASINGS.easeOut(progress);
+      // Overshoot easing: bars grow past target then settle back
+      const overshootVal = overshoot(staggeredProgress);
+      barHeight = fullBarHeight * overshootVal;
+      // Glow brightest near the overshoot peak
+      if (staggeredProgress > 0.6 && staggeredProgress < 0.85) {
+        glowIntensity = (0.85 - staggeredProgress) / 0.25;
+      }
     } else {
       // slideIn
       barHeight = fullBarHeight;
-      barOffsetX = (1 - EASINGS.easeOut(progress)) * -chartWidth * 0.3;
+      barOffsetX = (1 - EASINGS.easeOut(staggeredProgress)) * -chartWidth * 0.3;
     }
 
     const barY = baseY - barHeight;
+    const barColor = item.color ?? theme.chartColors[i % theme.chartColors.length];
 
-    // Bar with rounded top
-    ctx.fillStyle = item.color ?? theme.chartColors[i % theme.chartColors.length];
+    // Bar glow on overshoot peak
+    if (glowIntensity > 0) {
+      ctx.save();
+      ctx.shadowColor = barColor;
+      ctx.shadowBlur = 20 * glowIntensity;
+      ctx.fillStyle = barColor;
+      roundRectPath(ctx, barX + barOffsetX, barY, barW, barHeight, 8);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Bar with rounded top + gradient
+    const grad = ctx.createLinearGradient(0, barY, 0, baseY);
+    grad.addColorStop(0, barColor);
+    grad.addColorStop(1, withAlpha(barColor, 0.7));
+    ctx.fillStyle = grad;
     roundRectPath(ctx, barX + barOffsetX, barY, barW, barHeight, 8);
     ctx.fill();
 
-    // Value on top
-    if (props.showValues && progress > 0.5) {
-      const valueAlpha = clamp01((progress - 0.5) * 2);
+    // Value on top with bounce-in
+    if (props.showValues && staggeredProgress > 0.5) {
+      const valueAlpha = clamp01((staggeredProgress - 0.5) * 2);
+      const bounceScale = 1 + 0.15 * Math.sin(clamp01((staggeredProgress - 0.5) * 2) * Math.PI);
+      ctx.save();
       ctx.globalAlpha *= valueAlpha;
-      ctx.font = `bold ${theme.bodyFontSize}px ${font}`;
+      ctx.font = `bold ${theme.bodyFontSize * bounceScale}px ${font}`;
       ctx.fillStyle = theme.textColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
       const valueText = `${item.value}${props.unit}`;
-      ctx.fillText(valueText, barX + barW / 2 + barOffsetX, barY - 10);
-      ctx.globalAlpha /= valueAlpha;
+      drawGlowText(ctx, valueText, barX + barW / 2 + barOffsetX, barY - 10, {
+        color: theme.textColor, glowColor: barColor, glowBlur: 8 * valueAlpha,
+      });
+      ctx.restore();
     }
 
     // Label below
@@ -358,6 +523,54 @@ export function drawKeywordHighlight(
   ctx.fillText(props.text, centerX, centerY);
 
   ctx.restore();
+
+  // Particle burst — radiating from center during first 50%
+  if (progress < 0.5) {
+    const burstT = progress / 0.5;
+    const burstColor = props.glowColor ?? theme.primaryColor;
+    const burstCount = 24;
+    const maxRadius = Math.min(canvas.width, canvas.height) * 0.4;
+    for (let i = 0; i < burstCount; i++) {
+      const angle = (i / burstCount) * Math.PI * 2;
+      const particleDist = burstT * maxRadius * (0.7 + 0.3 * Math.sin(i * 1.7));
+      const px = centerX + Math.cos(angle) * particleDist;
+      const py = centerY + Math.sin(angle) * particleDist;
+      const pAlpha = (1 - burstT) * 0.6;
+      const pSize = (1 - burstT) * 4 + 1;
+      ctx.save();
+      ctx.globalAlpha = pAlpha;
+      ctx.fillStyle = burstColor;
+      ctx.shadowColor = burstColor;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(px, py, pSize, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // Continuous ambient particles after burst
+  if (progress >= 0.3) {
+    const ambientT = (localTime - duration * ANIMATION_PHASE * 0.3) * 1.5;
+    const ambientColor = props.glowColor ?? theme.primaryColor;
+    const ambientCount = 8;
+    for (let i = 0; i < ambientCount; i++) {
+      const angle = ambientT * 0.5 + (i / ambientCount) * Math.PI * 2;
+      const radius = 100 + 80 * Math.sin(ambientT * 0.7 + i);
+      const px = centerX + Math.cos(angle) * radius;
+      const py = centerY + Math.sin(angle) * radius;
+      const pAlpha = 0.3 + 0.2 * Math.sin(ambientT + i * 2);
+      ctx.save();
+      ctx.globalAlpha = pAlpha;
+      ctx.fillStyle = ambientColor;
+      ctx.shadowColor = ambientColor;
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(px, py, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
 }
 
 // ============================================================
@@ -489,7 +702,7 @@ export function drawEndCard(
   if (props.animation === 'slideUp') {
     ctx.translate(0, (1 - EASINGS.easeOut(progress)) * 60);
   } else if (props.animation === 'scaleIn') {
-    const scale = 0.85 + 0.15 * EASINGS.easeOut(progress);
+    const scale = 0.85 + 0.15 * EASINGS.elastic(progress);
     ctx.translate(centerX, centerY);
     ctx.scale(scale, scale);
     ctx.translate(-centerX, -centerY);
@@ -497,12 +710,15 @@ export function drawEndCard(
     ctx.globalAlpha *= progress;
   }
 
-  // Brand name
+  // Brand name with glow
   ctx.font = `bold ${theme.titleFontSize}px ${font}`;
   ctx.fillStyle = theme.primaryColor;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  ctx.shadowColor = theme.primaryColor;
+  ctx.shadowBlur = 25 * progress;
   ctx.fillText(props.brandName, centerX, centerY - 80);
+  ctx.shadowBlur = 0;
 
   // Slogan
   if (props.slogan) {
@@ -520,14 +736,29 @@ export function drawEndCard(
     const btnX = centerX - btnWidth / 2;
     const btnY = centerY + 80;
 
-    // Button background
+    // Button background with subtle glow
+    ctx.shadowColor = theme.primaryColor;
+    ctx.shadowBlur = 15 * progress;
     ctx.fillStyle = theme.primaryColor;
     roundRectPath(ctx, btnX, btnY, btnWidth, btnHeight, theme.borderRadius);
     ctx.fill();
+    ctx.shadowBlur = 0;
 
     // Button text
     ctx.fillStyle = '#ffffff';
     ctx.fillText(props.ctaText, centerX, btnY + btnHeight / 2);
+  }
+
+  // Sweep light effect during first 40% of animation
+  if (progress < 0.4) {
+    const sweepProgress = progress / 0.4;
+    const sweepX = -canvas.width * 0.3 + sweepProgress * canvas.width * 1.6;
+    const grad = ctx.createLinearGradient(sweepX - 80, 0, sweepX + 80, 0);
+    grad.addColorStop(0, 'rgba(255,255,255,0)');
+    grad.addColorStop(0.5, 'rgba(255,255,255,0.15)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
   ctx.restore();
@@ -770,6 +1001,16 @@ export function drawLineChart(
     }
     ctx.stroke();
 
+    // Draw-head glow: a luminous dot at the drawing front
+    if (visiblePoints > 0 && visiblePoints < data.length && drawProgress < 1) {
+      const headIdx = visiblePoints - 1;
+      const nextIdx = Math.min(headIdx + 1, data.length - 1);
+      const segProgress = (data.length * drawProgress) - Math.floor(data.length * drawProgress);
+      const hx = padding.left + (chartW / Math.max(data.length - 1, 1)) * headIdx + (chartW / Math.max(data.length - 1, 1)) * segProgress;
+      const hy = padding.top + chartH - (data[headIdx] + (data[nextIdx] - data[headIdx]) * segProgress) / yMax * chartH;
+      drawGlowDot(ctx, hx, hy, 18, color, 40);
+    }
+
     // Dots — bigger with white outline for contrast
     if (showDots) {
       for (let i = 0; i < visiblePoints; i++) {
@@ -780,11 +1021,8 @@ export function drawLineChart(
         ctx.beginPath();
         ctx.arc(x, y, 13, 0, Math.PI * 2);
         ctx.fill();
-        // Color dot
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(x, y, 9, 0, Math.PI * 2);
-        ctx.fill();
+        // Color dot with subtle glow
+        drawGlowDot(ctx, x, y, 9, color, 12);
       }
     }
   });
@@ -1362,19 +1600,50 @@ export function drawNumberAnimation(
   const currentValue = startValue + (endValue - startValue) * eased;
   const displayValue = currentValue.toFixed(decimals);
 
-  // Number
-  ctx.font = `bold ${props.fontSize ?? 160}px ${font}`;
-  ctx.fillStyle = props.textColor ?? theme.primaryColor;
+  // Number with glow
+  const fontSize = props.fontSize ?? 160;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const numText = `${props.prefix ?? ''}${displayValue}${props.suffix ?? ''}`;
-  ctx.fillText(numText, centerX, centerY);
+  drawGlowText(ctx, `${props.prefix ?? ''}${displayValue}${props.suffix ?? ''}`, centerX, centerY, {
+    font: `bold ${fontSize}px ${font}`,
+    color: props.textColor ?? theme.primaryColor,
+    glowColor: props.textColor ?? theme.primaryColor,
+    glowBlur: 30,
+    alpha: 1,
+  });
 
   // Label
   if (props.label) {
     ctx.font = `${theme.bodyFontSize * 0.7}px ${font}`;
     ctx.fillStyle = theme.textSecondaryColor;
-    ctx.fillText(props.label, centerX, centerY + (props.fontSize ?? 160) * 0.8);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(props.label, centerX, centerY + fontSize * 0.8);
+  }
+
+  // Particle burst when reaching target value
+  if (progress >= 0.92) {
+    const burstT = (progress - 0.92) / 0.08;
+    const burstColor = props.textColor ?? theme.primaryColor;
+    const burstCount = 32;
+    const maxRadius = Math.min(canvas.width, canvas.height) * 0.35;
+    for (let i = 0; i < burstCount; i++) {
+      const angle = (i / burstCount) * Math.PI * 2 + burstT * 0.3;
+      const particleDist = burstT * maxRadius * (0.6 + 0.4 * Math.sin(i * 2.3));
+      const px = centerX + Math.cos(angle) * particleDist;
+      const py = centerY + Math.sin(angle) * particleDist;
+      const pAlpha = (1 - burstT) * 0.8;
+      const pSize = (1 - burstT) * 5 + 2;
+      ctx.save();
+      ctx.globalAlpha = pAlpha;
+      ctx.fillStyle = burstColor;
+      ctx.shadowColor = burstColor;
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(px, py, pSize, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
   }
 }
 
