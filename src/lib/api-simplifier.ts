@@ -119,8 +119,8 @@ function buildTextCardProps(
   return {
     title: seg.title ?? '',
     subtitle: seg.subtitle ?? '',
-    titleFontSize: 72,
-    subtitleFontSize: 40,
+    titleFontSize: 80,
+    subtitleFontSize: 48,
     textColor: t.textColor,
     bgColor: t.bgColor,
     bgGradient: true,
@@ -198,10 +198,10 @@ function buildKeywordHighlightProps(
 ): KeywordHighlightProps {
   return {
     text: seg.text ?? '',
-    fontSize: 110,
+    fontSize: 130,
     textColor: '#ffffff',
     glowColor: t.primaryColor,
-    glowRadius: 40,
+    glowRadius: 50,
     bgColor: t.bgDarkColor,
     animation: 'pulse',
     pulseScale: 1.15,
@@ -215,8 +215,8 @@ function buildQuoteCardProps(
   return {
     quote: seg.quote ?? '',
     author: seg.author ?? '',
-    quoteFontSize: 52,
-    authorFontSize: 30,
+    quoteFontSize: 58,
+    authorFontSize: 34,
     quoteColor: t.textColor,
     authorColor: t.textSecondaryColor,
     bgColor: t.bgColor,
@@ -304,7 +304,7 @@ function buildNumberAnimationProps(
     prefix: seg.prefix ?? '',
     suffix: seg.suffix ?? '',
     decimals: 0,
-    fontSize: 140,
+    fontSize: 170,
     textColor: t.primaryColor,
     bgColor: t.bgDarkColor,
     label: seg.label ?? '',
@@ -322,8 +322,8 @@ function buildTagCloudProps(
     layout: 'grid',
     animation: 'fadeInSequential',
     staggerDelay: 0.12,
-    minFontSize: 28,
-    maxFontSize: 56,
+    minFontSize: 32,
+    maxFontSize: 64,
   };
 }
 
@@ -443,7 +443,7 @@ export function simplifiedToProject(req: SimplifiedRenderRequest): Project {
     name: `API Render ${new Date().toLocaleString()}`,
     createdAt: now,
     updatedAt: now,
-    canvas: { width: 1080, height: 1920, fps: 24 },
+    canvas: { width: 720, height: 1280, fps: 24 },
     theme: themeId,
     timeline: segments,
   };

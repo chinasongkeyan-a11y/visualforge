@@ -1288,7 +1288,7 @@ export function drawNumberAnimation(
   const displayValue = currentValue.toFixed(decimals);
 
   // Number
-  ctx.font = `bold ${props.fontSize ?? 120}px ${font}`;
+  ctx.font = `bold ${props.fontSize ?? 160}px ${font}`;
   ctx.fillStyle = props.textColor ?? theme.primaryColor;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -1299,7 +1299,7 @@ export function drawNumberAnimation(
   if (props.label) {
     ctx.font = `${theme.bodyFontSize * 0.7}px ${font}`;
     ctx.fillStyle = theme.textSecondaryColor;
-    ctx.fillText(props.label, centerX, centerY + (props.fontSize ?? 120) * 0.8);
+    ctx.fillText(props.label, centerX, centerY + (props.fontSize ?? 160) * 0.8);
   }
 }
 
@@ -1319,8 +1319,8 @@ export function drawTagCloud(
   if (tags.length === 0) return;
 
   const layout = props.layout ?? 'grid';
-  const minFontSize = props.minFontSize ?? 24;
-  const maxFontSize = props.maxFontSize ?? 60;
+  const minFontSize = props.minFontSize ?? 34;
+  const maxFontSize = props.maxFontSize ?? 68;
   const staggerDelay = props.staggerDelay ?? 0.15;
   const localProgress = clamp01(localTime / (duration * ANIMATION_PHASE));
 
