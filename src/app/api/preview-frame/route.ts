@@ -4,6 +4,7 @@ import fs from 'fs';
 import type { Project } from '../../../lib/types';
 import { renderFrame } from '../../../lib/renderer';
 import type { RenderCtx } from '../../../lib/renderer/context';
+import { simplifiedToProject, type SimplifiedRenderRequest } from '../../../lib/api-simplifier';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -26,25 +27,35 @@ function ensureFontRegistered(): void {
 }
 
 interface PreviewRequest {
-  project: Project;
+  project?: Project;
+  theme?: string;
+  segments?: SimplifiedRenderRequest['segments'];
   time: number;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as PreviewRequest;
-    const { project, time } = body;
-
-    if (!project) {
-      return NextResponse.json(
-        { success: false, error: '缺少 project 参数' },
-        { status: 400 },
-      );
-    }
+    const { time } = body;
 
     if (typeof time !== 'number' || time < 0) {
       return NextResponse.json(
         { success: false, error: 'time 参数无效' },
+        { status: 400 },
+      );
+    }
+
+    let project: Project;
+    if (body.project) {
+      project = body.project;
+    } else if (body.segments) {
+      project = simplifiedToProject({
+        theme: body.theme,
+        segments: body.segments,
+      });
+    } else {
+      return NextResponse.json(
+        { success: false, error: '需要 project 对象或 segments 数组' },
         { status: 400 },
       );
     }
@@ -59,14 +70,17 @@ export async function POST(request: NextRequest) {
 
     const base64 = canvas.toBuffer('image/png').toString('base64');
 
-    return NextResponse.json({
-      frame: `data:image/png;base64,${base64}`,
+    return new NextResponse(base64, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/plain',
+      },
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error('[api/preview-frame] Error:', msg);
     return NextResponse.json(
-      { success: false, error: `预览失败: ${msg}` },
+      { success: false, error: `预览渲染失败: ${msg}` },
       { status: 500 },
     );
   }

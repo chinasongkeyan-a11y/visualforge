@@ -266,7 +266,7 @@ export function drawBarChart(
     const barY = baseY - barHeight;
 
     // Bar with rounded top
-    ctx.fillStyle = item.color;
+    ctx.fillStyle = item.color ?? theme.chartColors[i % theme.chartColors.length];
     roundRectPath(ctx, barX + barOffsetX, barY, barW, barHeight, 8);
     ctx.fill();
 

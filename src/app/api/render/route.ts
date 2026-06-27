@@ -1,31 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRenderTask, cleanupOldTasks } from '../../../lib/server/render-store';
 import { executeRenderPipeline } from '../../../lib/server/pipeline';
+import { simplifiedToProject, type SimplifiedRenderRequest } from '../../../lib/api-simplifier';
 import type { Project } from '../../../lib/types';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
-interface RenderRequest {
-  project: Project;
-}
-
+/**
+ * POST /api/render
+ *
+ * Accepts two formats:
+ *
+ * 1. Simplified (recommended):
+ *    { theme?: string, segments: [{ type, start, duration?, ...contentFields }] }
+ *
+ * 2. Legacy (full project):
+ *    { project: { id, name, canvas, theme, timeline: [...] } }
+ */
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as RenderRequest;
-    const { project } = body;
+    const body = await request.json();
 
-    if (!project) {
-      return NextResponse.json(
-        { success: false, error: '缺少 project 参数' },
-        { status: 400 },
-      );
-    }
+    let project: Project;
 
-    // Validate canvas
-    if (!project.canvas?.width || !project.canvas?.height || !project.canvas?.fps) {
+    if (body.project) {
+      // Legacy full-project format
+      project = body.project as Project;
+    } else if (body.segments) {
+      // Simplified format
+      project = simplifiedToProject(body as SimplifiedRenderRequest);
+    } else {
       return NextResponse.json(
-        { success: false, error: '缺少 canvas 配置 (width, height, fps)' },
+        { success: false, error: '请求格式无效：需要 segments 数组或 project 对象' },
         { status: 400 },
       );
     }
@@ -63,7 +70,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Calculate estimated time based on frame count
-    const estimatedFrames = Math.ceil(totalDuration * project.canvas.fps);
+    const fps = project.canvas?.fps ?? 24;
+    const estimatedFrames = Math.ceil(totalDuration * fps);
     const estimatedTime = Math.ceil(estimatedFrames * 0.2); // ~200ms per frame
 
     return NextResponse.json({
