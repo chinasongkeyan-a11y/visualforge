@@ -415,12 +415,9 @@ function genSegmentId(): string {
 }
 
 export function simplifiedToProject(req: SimplifiedRenderRequest): Project {
-  const themeId = req.theme ?? 'tech_blue';
+  const themeId = req.theme ?? 'onyx';
   const theme = getTheme(themeId);
   const tokens = theme.tokens;
-  if (!tokens) {
-    throw new Error(`Unknown theme: ${themeId}`);
-  }
 
   const now = new Date().toISOString();
   const segments: Segment[] = req.segments.map((s) => {
@@ -444,7 +441,7 @@ export function simplifiedToProject(req: SimplifiedRenderRequest): Project {
     createdAt: now,
     updatedAt: now,
     canvas: { width: 720, height: 1280, fps: 24 },
-    theme: themeId,
+    theme: 'onyx',
     timeline: segments,
   };
 }

@@ -6,7 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Play, Pause, Download, Loader2 } from 'lucide-react';
 import type { EditorHook } from '../../hooks/use-editor';
 import type { CanvasPreset } from '../../lib/types';
-import { THEMES } from '../../lib/themes';
 
 interface ToolbarProps {
   editor: EditorHook;
@@ -22,7 +21,6 @@ export function Toolbar({ editor }: ToolbarProps) {
     renderVideoUrl,
     renderError,
     setProjectName,
-    setTheme,
     setCanvasPreset,
     setCurrentTime,
     setIsPlaying,
@@ -95,18 +93,6 @@ export function Toolbar({ editor }: ToolbarProps) {
 
       <div className="w-px h-6 bg-[#30363d]" />
 
-      {/* Theme selector */}
-      <Select value={project.theme} onValueChange={setTheme}>
-        <SelectTrigger className="h-8 w-36 text-xs bg-[#161b22] border-[#30363d] text-[#e6edf3]">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {THEMES.map((t) => (
-            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
       {/* Canvas preset */}
       <Select
         value={project.canvas.width > project.canvas.height ? 'horizontal' : project.canvas.width === project.canvas.height ? 'square' : 'vertical'}
@@ -147,7 +133,7 @@ export function Toolbar({ editor }: ToolbarProps) {
       {/* Export */}
       {isRendering ? (
         <div className="flex items-center gap-2">
-          <Loader2 className="h-4 w-4 animate-spin text-[#2f81f7]" />
+          <Loader2 className="h-4 w-4 animate-spin text-[#D4AF37]" />
           <span className="text-xs text-[#7d8590] tabular-nums">
             渲染中 {Math.round((renderProgress ?? 0) * 100)}%
           </span>
@@ -158,7 +144,7 @@ export function Toolbar({ editor }: ToolbarProps) {
             href={renderVideoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 h-8 rounded-md bg-[#238636] hover:bg-[#2ea043] text-xs text-white font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3 h-8 rounded-md bg-[#D4AF37] hover:bg-[#E0BC4A] text-xs text-black font-medium transition-colors"
           >
             <Download className="h-3.5 w-3.5" />
             下载 MP4
@@ -175,7 +161,7 @@ export function Toolbar({ editor }: ToolbarProps) {
       ) : (
         <Button
           size="sm"
-          className="h-8 text-xs bg-[#238636] hover:bg-[#2ea043] text-white"
+          className="h-8 text-xs bg-[#D4AF37] hover:bg-[#E0BC4A] text-black"
           onClick={handleExport}
           disabled={project.timeline.length === 0}
         >

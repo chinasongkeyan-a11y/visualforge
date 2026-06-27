@@ -24,27 +24,21 @@ export default function DocsPage() {
           method="POST"
           path="/api/render"
           title="提交渲染任务"
-          desc="提交项目数据，异步启动 MP4 渲染任务。"
+          desc="提交片段数据，异步启动 MP4 渲染任务。theme 字段可选，默认使用 Onyx 黑色主题。"
           request={`{
-  "project": {
-    "canvas": { "width": 1080, "height": 1920, "fps": 24 },
-    "theme": "tech_blue",
-    "timeline": [
-      {
-        "type": "text_card",
-        "start": 0,
-        "duration": 3,
-        "track": 1,
-        "transitionIn": "fadeIn",
-        "transitionOut": "none",
-        "props": {
-          "title": "2024年AI市场规模",
-          "subtitle": "3.2万亿元",
-          "animation": "scaleIn"
-        }
-      }
-    ]
-  }
+  "segments": [
+    { "type": "text_card", "start": 0, "duration": 3,
+      "title": "2024年AI市场规模", "subtitle": "3.2万亿元" },
+    { "type": "bar_chart", "start": 3, "duration": 4,
+      "title": "市场份额",
+      "data": [
+        { "label": "A", "value": 45 },
+        { "label": "B", "value": 30 },
+        { "label": "C", "value": 25 }
+      ]},
+    { "type": "end_card", "start": 7, "duration": 3,
+      "brandName": "VisualForge", "slogan": "Render the Future" }
+  ]
 }`}
           response={`{
   "success": true,
@@ -89,12 +83,11 @@ export default function DocsPage() {
           method="GET"
           path="/api/themes"
           title="获取主题列表"
-          desc="返回所有内置主题。"
+          desc="返回内置主题（当前仅 Onyx 黑色主题）。"
           request={null}
           response={`{
   "themes": [
-    { "id": "tech_blue", "name": "Tech Blue" },
-    { "id": "dark_mode", "name": "Dark Mode" }
+    { "id": "onyx", "name": "Onyx" }
   ]
 }`}
         />
