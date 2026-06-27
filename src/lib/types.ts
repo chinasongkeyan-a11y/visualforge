@@ -2,13 +2,23 @@
 // VisualForge - Core Type Definitions
 // ============================================================
 
-/** Segment types supported in P0 MVP */
+/** All segment types */
 export type SegmentType =
   | 'text_card'
   | 'bar_chart'
+  | 'pie_chart'
+  | 'line_chart'
   | 'keyword_highlight'
   | 'quote_card'
-  | 'end_card';
+  | 'image_show'
+  | 'process_flow'
+  | 'persona_card'
+  | 'compare_card'
+  | 'number_animation'
+  | 'tag_cloud'
+  | 'progress_timeline'
+  | 'end_card'
+  | 'background';
 
 /** Transition types for segment in/out */
 export type TransitionType = 'fadeIn' | 'slideUp' | 'scaleIn' | 'fadeOut' | 'slideOut' | 'scaleOut' | 'none';
@@ -42,9 +52,19 @@ export interface Segment {
 export type SegmentProps =
   | TextCardProps
   | BarChartProps
+  | PieChartProps
+  | LineChartProps
   | KeywordHighlightProps
   | QuoteCardProps
-  | EndCardProps;
+  | ImageShowProps
+  | ProcessFlowProps
+  | PersonaCardProps
+  | CompareCardProps
+  | NumberAnimationProps
+  | TagCloudProps
+  | ProgressTimelineProps
+  | EndCardProps
+  | BackgroundProps;
 
 // ---- TextCard ----
 export interface TextCardProps {
@@ -109,6 +129,132 @@ export interface EndCardProps {
   bgColor: string;
   animation: 'fadeIn' | 'scaleIn' | 'slideUp';
   fadeOut: boolean;
+}
+
+// ---- PieChart ----
+export interface PieChartProps {
+  title: string;
+  data: { label: string; value: number; color: string }[];
+  showLabels: boolean;
+  showPercent: boolean;
+  showLegend: boolean;
+  animation: 'expand' | 'fadeIn';
+  donutMode: boolean;
+  centerText: string;
+}
+
+// ---- LineChart ----
+export interface LineChartProps {
+  title: string;
+  series: { name: string; data: number[]; color: string }[];
+  xLabels: string[];
+  yMax: number;
+  showDots: boolean;
+  showGrid: boolean;
+  animation: 'draw' | 'fadeIn';
+  fillArea: boolean;
+}
+
+// ---- ImageShow ----
+export interface ImageShowProps {
+  imageUrl: string;
+  fit: 'cover' | 'contain' | 'fill';
+  filter: 'none' | 'grayscale' | 'sepia' | 'blur' | 'darken';
+  overlayText: string;
+  overlayPosition: 'top' | 'center' | 'bottom';
+  animation: 'kenBurns' | 'fadeIn' | 'slideIn';
+  kenBurnsScale: number;
+  kenBurnsDirection: 'zoomIn' | 'zoomOut' | 'panLeft' | 'panRight' | 'panUp' | 'panDown';
+  roundedCorners: number;
+}
+
+// ---- ProcessFlow ----
+export interface ProcessFlowProps {
+  title: string;
+  steps: { title: string; description: string }[];
+  layout: 'vertical' | 'horizontal';
+  showConnector: boolean;
+  connectorStyle: 'line' | 'arrow' | 'dashed';
+  animation: 'sequential' | 'fadeInAll';
+  stepDelay: number;
+  iconType: 'number' | 'dot' | 'check';
+}
+
+// ---- PersonaCard ----
+export interface PersonaCardProps {
+  name: string;
+  title: string;
+  description: string;
+  avatarUrl: string;
+  avatarShape: 'circle' | 'square' | 'rounded';
+  bgColor: string;
+  animation: 'slideLeft' | 'slideRight' | 'fadeIn' | 'scaleIn';
+  showBorder: boolean;
+  borderColor: string;
+}
+
+// ---- CompareCard ----
+export interface CompareCardProps {
+  title: string;
+  leftLabel: string;
+  rightLabel: string;
+  leftContent: string;
+  rightContent: string;
+  leftColor: string;
+  rightColor: string;
+  layout: 'sideBySide' | 'topBottom';
+  animation: 'slideLeft' | 'expand' | 'fadeIn';
+  dividerStyle: 'line' | 'VS' | 'none';
+}
+
+// ---- NumberAnimation ----
+export interface NumberAnimationProps {
+  startValue: number;
+  endValue: number;
+  prefix: string;
+  suffix: string;
+  decimals: number;
+  fontSize: number;
+  textColor: string;
+  bgColor: string;
+  label: string;
+  easing: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut' | 'bounce';
+}
+
+// ---- TagCloud ----
+export interface TagCloudProps {
+  tags: { text: string; color?: string; size?: number }[];
+  bgColor: string;
+  layout: 'random' | 'grid' | 'spiral';
+  animation: 'fadeInSequential' | 'fadeInAll' | 'floatIn';
+  staggerDelay: number;
+  minFontSize: number;
+  maxFontSize: number;
+}
+
+// ---- ProgressTimeline ----
+export interface ProgressTimelineProps {
+  title: string;
+  nodes: { label: string; time?: string; color?: string }[];
+  layout: 'horizontal' | 'vertical';
+  lineStyle: 'solid' | 'dashed' | 'gradient';
+  nodeShape: 'circle' | 'diamond' | 'square';
+  animation: 'draw' | 'fadeIn';
+  showProgress: boolean;
+}
+
+// ---- Background ----
+export interface BackgroundProps {
+  type: 'solid' | 'gradient' | 'particles' | 'grid' | 'dots';
+  color: string;
+  gradientColors: string[];
+  gradientDirection: 'vertical' | 'horizontal' | 'radial' | 'diagonal';
+  particleCount: number;
+  particleColor: string;
+  particleSpeed: number;
+  gridColor: string;
+  gridSpacing: number;
+  animated: boolean;
 }
 
 /** Theme tokens - used by all segment renderers */

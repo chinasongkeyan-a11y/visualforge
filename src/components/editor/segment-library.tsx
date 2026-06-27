@@ -2,15 +2,41 @@
 
 import { SEGMENT_LIBRARY } from '../../lib/segment-schemas';
 import type { SegmentType } from '../../lib/types';
-import { Type, BarChart3, Highlighter, Quote, Flag } from 'lucide-react';
+import {
+  Type,
+  BarChart3,
+  PieChart,
+  TrendingUp,
+  Highlighter,
+  Quote,
+  Image,
+  Workflow,
+  User,
+  Columns2,
+  Hash,
+  Tags,
+  GitCommitVertical,
+  Flag,
+  Layers,
+} from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 
 const ICONS: Record<string, typeof Type> = {
   type: Type,
   'bar-chart-3': BarChart3,
+  'pie-chart': PieChart,
+  'trending-up': TrendingUp,
   highlighter: Highlighter,
   quote: Quote,
+  image: Image,
+  workflow: Workflow,
+  user: User,
+  'columns-2': Columns2,
+  hash: Hash,
+  tags: Tags,
+  'git-commit-vertical': GitCommitVertical,
   flag: Flag,
+  layers: Layers,
 };
 
 interface SegmentLibraryProps {
@@ -33,8 +59,8 @@ export function SegmentLibrary({ onAddSegment }: SegmentLibraryProps) {
                 onClick={() => onAddSegment(item.type)}
                 className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md text-xs text-[#e6edf3] hover:bg-[#161b22] transition-colors group"
               >
-                <Icon className="h-4 w-4 text-[#7d8590] group-hover:text-[#2f81f7] transition-colors" />
-                <span>{item.name}</span>
+                <Icon className="h-4 w-4 text-[#7d8590] group-hover:text-[#2f81f7] transition-colors shrink-0" />
+                <span className="truncate">{item.name}</span>
               </button>
             );
           })}

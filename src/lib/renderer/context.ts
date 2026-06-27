@@ -9,6 +9,12 @@ export interface GradientLike {
   addColorStop(offset: number, color: string): void;
 }
 
+/** Image object (browser HTMLImageElement / node-canvas Image) */
+export interface CanvasImageLike {
+  width: number;
+  height: number;
+}
+
 /**
  * Minimal 2D context interface covering all methods used by the renderer.
  * Both browser's CanvasRenderingContext2D and @napi-rs/canvas's context
@@ -76,6 +82,9 @@ export interface RenderCtx {
 
   // Line dash
   setLineDash(segments: number[]): void;
+
+  // Image filter (CSS filter string, e.g. "grayscale(100%)")
+  filter?: string;
 }
 
 /** Canvas size info passed to segment renderers */
@@ -88,6 +97,7 @@ export interface CanvasInfo {
 export interface DrawContext {
   ctx: RenderCtx;
   canvas: CanvasInfo;
+  loadImage?: (src: string) => Promise<CanvasImageLike | null>;
 }
 
 /** Wrap text into lines that fit within maxWidth */
