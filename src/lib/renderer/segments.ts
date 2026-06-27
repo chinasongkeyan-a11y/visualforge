@@ -7,15 +7,11 @@ import type {
   BarChartProps,
   KeywordHighlightProps,
   QuoteCardProps,
-  EndCardProps,
   PieChartProps,
   LineChartProps,
-  ImageShowProps,
   ProcessFlowProps,
-  PersonaCardProps,
   CompareCardProps,
   NumberAnimationProps,
-  TagCloudProps,
   ProgressTimelineProps,
   BackgroundProps,
   ThemeTokens,
@@ -672,99 +668,6 @@ export function drawQuoteCard(
 }
 
 // ============================================================
-// EndCard
-// ============================================================
-export function drawEndCard(
-  dc: DrawContext,
-  props: EndCardProps,
-  localTime: number,
-  duration: number,
-  theme: ThemeTokens,
-): void {
-  const { ctx, canvas } = dc;
-  const font = theme.fontFamily;
-  const progress = getAnimProgress(localTime, duration);
-  const centerX = canvas.width / 2;
-  const centerY = canvas.height / 2;
-
-  // Background
-  ctx.fillStyle = props.bgColor ?? theme.bgColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  let fadeAlpha = 1;
-  if (props.fadeOut && localTime > duration * 0.7) {
-    fadeAlpha = 1 - clamp01((localTime - duration * 0.7) / (duration * 0.3));
-  }
-
-  ctx.save();
-  ctx.globalAlpha *= fadeAlpha;
-
-  // Apply animation
-  if (props.animation === 'slideUp') {
-    ctx.translate(0, (1 - EASINGS.easeOut(progress)) * 60);
-  } else if (props.animation === 'scaleIn') {
-    const scale = 0.85 + 0.15 * EASINGS.elastic(progress);
-    ctx.translate(centerX, centerY);
-    ctx.scale(scale, scale);
-    ctx.translate(-centerX, -centerY);
-  } else {
-    ctx.globalAlpha *= progress;
-  }
-
-  // Brand name with glow
-  ctx.font = `bold ${theme.titleFontSize}px ${font}`;
-  ctx.fillStyle = theme.primaryColor;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.shadowColor = theme.primaryColor;
-  ctx.shadowBlur = 25 * progress;
-  ctx.fillText(props.brandName, centerX, centerY - 80);
-  ctx.shadowBlur = 0;
-
-  // Slogan
-  if (props.slogan) {
-    ctx.font = `${theme.subtitleFontSize}px ${font}`;
-    ctx.fillStyle = theme.textSecondaryColor;
-    ctx.fillText(props.slogan, centerX, centerY);
-  }
-
-  // CTA button
-  if (props.ctaText) {
-    ctx.font = `bold ${theme.bodyFontSize}px ${font}`;
-    const textMetrics = ctx.measureText(props.ctaText);
-    const btnWidth = textMetrics.width + 80;
-    const btnHeight = theme.bodyFontSize + 40;
-    const btnX = centerX - btnWidth / 2;
-    const btnY = centerY + 80;
-
-    // Button background with subtle glow
-    ctx.shadowColor = theme.primaryColor;
-    ctx.shadowBlur = 15 * progress;
-    ctx.fillStyle = theme.primaryColor;
-    roundRectPath(ctx, btnX, btnY, btnWidth, btnHeight, theme.borderRadius);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    // Button text
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(props.ctaText, centerX, btnY + btnHeight / 2);
-  }
-
-  // Sweep light effect during first 40% of animation
-  if (progress < 0.4) {
-    const sweepProgress = progress / 0.4;
-    const sweepX = -canvas.width * 0.3 + sweepProgress * canvas.width * 1.6;
-    const grad = ctx.createLinearGradient(sweepX - 80, 0, sweepX + 80, 0);
-    grad.addColorStop(0, 'rgba(255,255,255,0)');
-    grad.addColorStop(0.5, 'rgba(255,255,255,0.15)');
-    grad.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
-
-  ctx.restore();
-}
-
-// ============================================================
 // PieChart
 // ============================================================
 export function drawPieChart(
@@ -1049,130 +952,6 @@ export function drawLineChart(
 }
 
 // ============================================================
-// ImageShow
-// ============================================================
-export async function drawImageShow(
-  dc: DrawContext,
-  props: ImageShowProps,
-  localTime: number,
-  duration: number,
-  theme: ThemeTokens,
-): Promise<void> {
-  const { ctx, canvas, loadImage } = dc;
-  const font = theme.fontFamily;
-  const progress = getAnimProgress(localTime, duration);
-  const fit = props.fit ?? 'cover';
-  const filter = props.filter ?? 'none';
-  const roundedCorners = props.roundedCorners ?? 0;
-
-  // Background
-  ctx.fillStyle = theme.cardBgColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  if (!props.imageUrl || !loadImage) {
-    // Placeholder
-    ctx.font = `${theme.bodyFontSize}px ${font}`;
-    ctx.fillStyle = theme.textSecondaryColor;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('无图片', canvas.width / 2, canvas.height / 2);
-    return;
-  }
-
-  try {
-    const img = await loadImage(props.imageUrl);
-    ctx.save();
-
-    // Apply animation
-    if (props.animation === 'fadeIn') {
-      ctx.globalAlpha *= progress;
-    } else if (props.animation === 'slideIn') {
-      ctx.translate((1 - EASINGS.easeOut(progress)) * -canvas.width * 0.3, 0);
-    } else if (props.animation === 'kenBurns') {
-      const scale = props.kenBurnsDirection === 'zoomIn'
-        ? 1 + 0.2 * (localTime / duration)
-        : props.kenBurnsDirection === 'zoomOut'
-          ? 1.2 - 0.2 * (localTime / duration)
-          : 1 + 0.1 * (localTime / duration);
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.scale(scale, scale);
-      ctx.translate(-canvas.width / 2, -canvas.height / 2);
-    }
-
-    // Apply filter
-    const ctxAny = ctx as unknown as { filter: string };
-    if (filter === 'grayscale') ctxAny.filter = 'grayscale(100%)';
-    else if (filter === 'sepia') ctxAny.filter = 'sepia(100%)';
-    else if (filter === 'blur') ctxAny.filter = 'blur(10px)';
-    else if (filter === 'darken') ctxAny.filter = 'brightness(0.5)';
-
-    // Calculate dimensions based on fit
-    const imgAny = img as { width: number; height: number };
-    const imgRatio = imgAny.width / imgAny.height;
-    const canvasRatio = canvas.width / canvas.height;
-    let dw: number, dh: number, dx: number, dy: number;
-
-    if (fit === 'cover') {
-      if (imgRatio > canvasRatio) {
-        dh = canvas.height;
-        dw = dh * imgRatio;
-      } else {
-        dw = canvas.width;
-        dh = dw / imgRatio;
-      }
-      dx = (canvas.width - dw) / 2;
-      dy = (canvas.height - dh) / 2;
-    } else if (fit === 'contain') {
-      if (imgRatio > canvasRatio) {
-        dw = canvas.width;
-        dh = dw / imgRatio;
-      } else {
-        dh = canvas.height;
-        dw = dh * imgRatio;
-      }
-      dx = (canvas.width - dw) / 2;
-      dy = (canvas.height - dh) / 2;
-    } else {
-      dw = canvas.width;
-      dh = canvas.height;
-      dx = 0;
-      dy = 0;
-    }
-
-    if (roundedCorners > 0) {
-      roundRectPath(ctx, dx, dy, dw, dh, roundedCorners);
-      ctx.clip();
-    }
-
-    ctx.drawImage(img as CanvasImageLike, dx, dy, dw, dh);
-    (ctx as unknown as { filter: string }).filter = 'none';
-
-    // Overlay text
-    if (props.overlayText) {
-      const overlayY = props.overlayPosition === 'top' ? canvas.height * 0.1
-        : props.overlayPosition === 'bottom' ? canvas.height * 0.9
-          : canvas.height / 2;
-      ctx.font = `bold ${theme.subtitleFontSize}px ${font}`;
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 20;
-      ctx.fillText(props.overlayText, canvas.width / 2, overlayY);
-      ctx.shadowBlur = 0;
-    }
-
-    ctx.restore();
-  } catch {
-    ctx.font = `${theme.bodyFontSize}px ${font}`;
-    ctx.fillStyle = theme.textSecondaryColor;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('图片加载失败', canvas.width / 2, canvas.height / 2);
-  }
-}
-
-// ============================================================
 // ProcessFlow
 // ============================================================
 export function drawProcessFlow(
@@ -1188,32 +967,59 @@ export function drawProcessFlow(
   const steps = props.steps ?? [];
   if (steps.length === 0) return;
 
-  const layout = props.layout ?? 'vertical';
-  const showConnector = props.showConnector ?? true;
-  const connectorStyle = props.connectorStyle ?? 'arrow';
   const iconType = props.iconType ?? 'number';
   const stepDelay = props.stepDelay ?? 0.3;
+  const stepCount = steps.length;
 
   // Background
   ctx.fillStyle = theme.cardBgColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Title
+  const titleY = canvas.height * 0.07;
   if (props.title) {
-    ctx.font = `bold ${theme.titleFontSize * 0.7}px ${font}`;
+    ctx.font = `bold ${theme.titleFontSize * 0.75}px ${font}`;
     ctx.fillStyle = theme.textColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(props.title, canvas.width / 2, canvas.height * 0.06);
+    ctx.shadowColor = theme.primaryColor;
+    ctx.shadowBlur = 20 * progress;
+    ctx.fillText(props.title, canvas.width / 2, titleY);
+    ctx.shadowBlur = 0;
   }
 
-  const isVertical = layout === 'vertical';
-  const stepCount = steps.length;
-  const startX = canvas.width * 0.5;
-  const startY = canvas.height * 0.15;
-  const stepSpacing = isVertical
-    ? (canvas.height * 0.65) / Math.max(stepCount, 1)
-    : (canvas.width * 0.8) / Math.max(stepCount, 1);
+  // Layout: vertical, cards on the left, connector line on the left edge
+  const contentTop = canvas.height * 0.14;
+  const contentBottom = canvas.height * 0.92;
+  const totalH = contentBottom - contentTop;
+  const stepSpacing = totalH / Math.max(stepCount, 1);
+  const lineX = canvas.width * 0.22;
+
+  // Draw connector line (gradient, animated draw)
+  const lineProgress = clamp01(progress / 0.6);
+  const lineEndY = contentTop + (totalH * 0.85) * lineProgress;
+  const grad = ctx.createLinearGradient(0, contentTop, 0, contentBottom);
+  grad.addColorStop(0, theme.primaryColor);
+  grad.addColorStop(0.5, theme.chartColors[2] ?? theme.primaryColor);
+  grad.addColorStop(1, theme.chartColors[1] ?? theme.primaryColor);
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(lineX, contentTop);
+  ctx.lineTo(lineX, lineEndY);
+  ctx.stroke();
+
+  // Draw a soft glow behind the line
+  ctx.shadowColor = theme.primaryColor;
+  ctx.shadowBlur = 15;
+  ctx.strokeStyle = withAlpha(theme.primaryColor, 0.3);
+  ctx.lineWidth = 8;
+  ctx.beginPath();
+  ctx.moveTo(lineX, contentTop);
+  ctx.lineTo(lineX, lineEndY);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
 
   steps.forEach((step, i) => {
     let stepProgress: number;
@@ -1223,232 +1029,111 @@ export function drawProcessFlow(
       const stepStart = i * stepDelay;
       stepProgress = clamp01((localTime - stepStart) / (duration * ANIMATION_PHASE - stepStart));
     }
-
     if (stepProgress <= 0) return;
 
-    const x = isVertical ? startX : startX + stepSpacing * i;
-    const y = isVertical ? startY + stepSpacing * i : startY + 60;
+    const y = contentTop + stepSpacing * i + stepSpacing * 0.5;
 
     ctx.save();
     ctx.globalAlpha *= stepProgress;
 
-    // Connector
-    if (showConnector && i > 0) {
-      const prevX = isVertical ? startX : startX + stepSpacing * (i - 1);
-      const prevY = isVertical ? startY + stepSpacing * (i - 1) : startY + 60;
-      ctx.strokeStyle = withAlpha(theme.primaryColor, 0.4);
-      ctx.lineWidth = 3;
-      if (connectorStyle === 'dashed') ctx.setLineDash([10, 8]);
+    // Slide-in from left
+    const slideX = (1 - EASINGS.easeOut(stepProgress)) * 40;
+    ctx.translate(-slideX, 0);
 
-      ctx.beginPath();
-      if (isVertical) {
-        ctx.moveTo(prevX, prevY + 30);
-        ctx.lineTo(x, y - 30);
-      } else {
-        ctx.moveTo(prevX + 30, prevY);
-        ctx.lineTo(x - 30, y);
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
+    // Node circle on the connector line
+    const nodeR = 32;
+    const colorIdx = i % (theme.chartColors.length || 1);
+    const nodeColor = theme.chartColors[colorIdx] ?? theme.primaryColor;
 
-      if (connectorStyle === 'arrow') {
-        ctx.fillStyle = withAlpha(theme.primaryColor, 0.4);
-        ctx.beginPath();
-        if (isVertical) {
-          ctx.moveTo(x, y - 30);
-          ctx.lineTo(x - 8, y - 40);
-          ctx.lineTo(x + 8, y - 40);
-        } else {
-          ctx.moveTo(x - 30, y);
-          ctx.lineTo(x - 40, y - 8);
-          ctx.lineTo(x - 40, y + 8);
-        }
-        ctx.closePath();
-        ctx.fill();
-      }
-    }
-
-    // Icon
-    const iconR = 30;
-    ctx.fillStyle = theme.primaryColor;
+    // Glow ring
+    ctx.shadowColor = nodeColor;
+    ctx.shadowBlur = 20;
+    ctx.strokeStyle = withAlpha(nodeColor, 0.4);
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(x, y, iconR, 0, Math.PI * 2);
+    ctx.arc(lineX, y, nodeR + 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Filled node
+    ctx.fillStyle = nodeColor;
+    ctx.beginPath();
+    ctx.arc(lineX, y, nodeR, 0, Math.PI * 2);
     ctx.fill();
 
+    // Node icon
     if (iconType === 'number') {
-      ctx.font = `bold ${theme.bodyFontSize * 0.8}px ${font}`;
+      ctx.font = `bold ${theme.bodyFontSize * 0.9}px ${font}`;
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(String(i + 1), x, y);
+      ctx.fillText(String(i + 1), lineX, y);
     } else if (iconType === 'dot') {
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.arc(lineX, y, 10, 0, Math.PI * 2);
       ctx.fill();
     } else if (iconType === 'check') {
-      ctx.font = `bold ${theme.bodyFontSize * 0.8}px ${font}`;
+      ctx.font = `bold ${theme.bodyFontSize * 0.9}px ${font}`;
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('✓', x, y);
+      ctx.fillText(String.fromCharCode(0x2713), lineX, y);
     }
 
+    // Card to the right of the node
+    const cardX = lineX + nodeR + 30;
+    const cardW = canvas.width - cardX - 40;
+    const cardH = stepSpacing * 0.75;
+    const cardY = y - cardH / 2;
+
+    // Card background
+    ctx.fillStyle = withAlpha(theme.cardBgColor, 0.9);
+    roundRectPath(ctx, cardX, cardY, cardW, cardH, 12);
+    ctx.fill();
+
+    // Card left accent bar
+    ctx.fillStyle = nodeColor;
+    roundRectPath(ctx, cardX, cardY, 5, cardH, 2.5);
+    ctx.fill();
+
+    // Card border
+    ctx.strokeStyle = withAlpha(nodeColor, 0.3);
+    ctx.lineWidth = 1.5;
+    roundRectPath(ctx, cardX, cardY, cardW, cardH, 12);
+    ctx.stroke();
+
     // Step title
-    ctx.font = `bold ${theme.subtitleFontSize * 0.6}px ${font}`;
+    ctx.font = `bold ${theme.subtitleFontSize * 0.75}px ${font}`;
     ctx.fillStyle = theme.textColor;
-    ctx.textAlign = isVertical ? 'left' : 'center';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    const textX = isVertical ? x + 50 : x;
-    const textY = isVertical ? y - 12 : y + 50;
-    ctx.fillText(step.title ?? '', textX, textY);
+    ctx.fillText(step.title ?? '', cardX + 24, cardY + cardH * 0.32);
 
     // Step description
     if (step.description) {
-      ctx.font = `${theme.bodyFontSize * 0.5}px ${font}`;
+      ctx.font = `${theme.bodyFontSize * 0.6}px ${font}`;
       ctx.fillStyle = theme.textSecondaryColor;
-      const descY = isVertical ? y + 14 : y + 80;
-      const descLines = wrapText(ctx, step.description, canvas.width * 0.6);
+      const descLines = wrapText(ctx, step.description, cardW - 50);
       descLines.slice(0, 2).forEach((line, li) => {
-        ctx.fillText(line, textX, descY + li * (theme.bodyFontSize * 0.6));
+        ctx.fillText(line, cardX + 24, cardY + cardH * 0.65 + li * (theme.bodyFontSize * 0.7));
       });
     }
 
     ctx.restore();
   });
-}
 
-// ============================================================
-// PersonaCard
-// ============================================================
-export function drawPersonaCard(
-  dc: DrawContext,
-  props: PersonaCardProps,
-  localTime: number,
-  duration: number,
-  theme: ThemeTokens,
-): void {
-  const { ctx, canvas } = dc;
-  const font = theme.fontFamily;
-  const progress = getAnimProgress(localTime, duration);
-  const centerX = canvas.width / 2;
-  const centerY = canvas.height / 2;
-  const avatarShape = props.avatarShape ?? 'circle';
-  const showBorder = props.showBorder ?? true;
-  const borderColor = props.borderColor ?? theme.primaryColor;
-
-  // Background
-  ctx.fillStyle = props.bgColor ?? theme.cardBgColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.save();
-  ctx.globalAlpha *= progress;
-
-  // Apply animation
-  if (props.animation === 'slideLeft') {
-    ctx.translate((1 - EASINGS.easeOut(progress)) * 200, 0);
-  } else if (props.animation === 'slideRight') {
-    ctx.translate((1 - EASINGS.easeOut(progress)) * -200, 0);
-  } else if (props.animation === 'scaleIn') {
-    const scale = 0.85 + 0.15 * EASINGS.easeOut(progress);
-    ctx.translate(centerX, centerY);
-    ctx.scale(scale, scale);
-    ctx.translate(-centerX, -centerY);
-  }
-
-  const avatarSize = 280;
-  const avatarX = centerX - avatarSize / 2;
-  const avatarY = centerY - 340;
-
-  // Decorative accent bar behind avatar
-  ctx.fillStyle = withAlpha(borderColor, 0.06);
-  ctx.fillRect(0, avatarY - 80, canvas.width, avatarSize + 160);
-
-  // Decorative side accents
-  ctx.fillStyle = withAlpha(borderColor, 0.15);
-  ctx.fillRect(40, avatarY - 80, 6, avatarSize + 160);
-  ctx.fillRect(canvas.width - 46, avatarY - 80, 6, avatarSize + 160);
-
-  // Avatar border ring (outer + inner glow)
-  if (showBorder) {
-    ctx.strokeStyle = withAlpha(borderColor, 0.3);
-    ctx.lineWidth = 2;
-    if (avatarShape === 'circle') {
-      ctx.beginPath();
-      ctx.arc(centerX, avatarY + avatarSize / 2, avatarSize / 2 + 18, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth = 6;
-    if (avatarShape === 'circle') {
-      ctx.beginPath();
-      ctx.arc(centerX, avatarY + avatarSize / 2, avatarSize / 2 + 8, 0, Math.PI * 2);
-      ctx.stroke();
-    } else {
-      roundRectPath(ctx, avatarX - 8, avatarY - 8, avatarSize + 16, avatarSize + 16, avatarShape === 'rounded' ? 24 : 0);
-      ctx.stroke();
-    }
-  }
-
-  // Avatar fill
-  const avatarGrad = ctx.createLinearGradient(avatarX, avatarY, avatarX + avatarSize, avatarY + avatarSize);
-  avatarGrad.addColorStop(0, theme.primaryColor);
-  avatarGrad.addColorStop(1, theme.secondaryColor);
-  ctx.fillStyle = avatarGrad;
-  if (avatarShape === 'circle') {
-    ctx.beginPath();
-    ctx.arc(centerX, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
-    ctx.fill();
-  } else {
-    roundRectPath(ctx, avatarX, avatarY, avatarSize, avatarSize, avatarShape === 'rounded' ? 20 : 0);
-    ctx.fill();
-  }
-
-  // Initials
-  ctx.font = `bold 120px ${font}`;
-  ctx.fillStyle = '#ffffff';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  const initials = (props.name ?? '?').slice(0, 1);
-  ctx.fillText(initials, centerX, avatarY + avatarSize / 2);
-
-  // Name
-  const nameY = avatarY + avatarSize + 90;
-  ctx.font = `bold ${theme.titleFontSize}px ${font}`;
-  ctx.fillStyle = theme.textColor;
-  ctx.fillText(props.name ?? '', centerX, nameY);
-
-  // Title with accent underline
-  if (props.title) {
-    ctx.font = `${theme.subtitleFontSize}px ${font}`;
+  // Animated particle traveling down the line
+  if (progress < 0.95) {
+    const particleY = contentTop + (totalH * 0.85) * clamp01(progress / 0.7);
     ctx.fillStyle = theme.primaryColor;
-    ctx.fillText(props.title, centerX, nameY + 65);
-    // Underline accent
-    const tw = ctx.measureText(props.title).width;
-    ctx.strokeStyle = theme.primaryColor;
-    ctx.lineWidth = 3;
+    ctx.shadowColor = theme.primaryColor;
+    ctx.shadowBlur = 25;
     ctx.beginPath();
-    ctx.moveTo(centerX - tw / 2 - 12, nameY + 92);
-    ctx.lineTo(centerX + tw / 2 + 12, nameY + 92);
-    ctx.stroke();
+    ctx.arc(lineX, particleY, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
   }
-
-  // Description
-  if (props.description) {
-    ctx.font = `${theme.bodyFontSize}px ${font}`;
-    ctx.fillStyle = theme.textSecondaryColor;
-    const lines = wrapText(ctx, props.description, canvas.width * 0.85);
-    const descStartY = nameY + 150;
-    lines.slice(0, 3).forEach((line, i) => {
-      ctx.fillText(line, centerX, descStartY + i * (theme.bodyFontSize * 1.2));
-    });
-  }
-
-  // Bottom decorative bar
-  ctx.fillStyle = withAlpha(theme.primaryColor, 0.3);
-  ctx.fillRect(centerX - 100, canvas.height - 120, 200, 4);
-
-  ctx.restore();
 }
 
 // ============================================================
@@ -1464,8 +1149,7 @@ export function drawCompareCard(
   const { ctx, canvas } = dc;
   const font = theme.fontFamily;
   const progress = getAnimProgress(localTime, duration);
-  const layout = props.layout ?? 'sideBySide';
-  const dividerStyle = props.dividerStyle ?? 'line';
+  const isSideBySide = props.layout !== 'topBottom';
 
   // Background
   ctx.fillStyle = theme.cardBgColor;
@@ -1474,91 +1158,235 @@ export function drawCompareCard(
   ctx.save();
   ctx.globalAlpha *= progress;
 
-  // Title
+  // Title with glow
+  const titleY = canvas.height * 0.07;
   if (props.title) {
-    ctx.font = `bold ${theme.titleFontSize * 0.7}px ${font}`;
+    ctx.font = `bold ${theme.titleFontSize * 0.75}px ${font}`;
     ctx.fillStyle = theme.textColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(props.title, canvas.width / 2, canvas.height * 0.08);
+    ctx.shadowColor = theme.primaryColor;
+    ctx.shadowBlur = 20 * progress;
+    ctx.fillText(props.title, canvas.width / 2, titleY);
+    ctx.shadowBlur = 0;
   }
 
-  const isSideBySide = layout === 'sideBySide';
-  const halfW = canvas.width / 2;
-  const halfH = canvas.height / 2;
-  const contentStartY = canvas.height * 0.15;
+  const leftColor = props.leftColor ?? theme.chartColors[0] ?? theme.primaryColor;
+  const rightColor = props.rightColor ?? theme.accentColor;
+  const contentTop = canvas.height * 0.14;
+  const contentBottom = canvas.height * 0.94;
+  const contentH = contentBottom - contentTop;
+  const padding = 20;
 
-  // Left side
-  ctx.save();
-  if (props.animation === 'slideLeft') {
+  // Left panel slide-in from left, right panel from right
+  const slideOffset = (1 - EASINGS.easeOut(progress)) * canvas.width * 0.15;
+
+  if (isSideBySide) {
+    const panelW = (canvas.width - padding * 3) / 2;
+
+    // ---- Left panel ----
+    const lx = padding - slideOffset;
+    const ly = contentTop;
+    ctx.save();
     ctx.globalAlpha *= clamp01(progress * 2);
-  }
-  ctx.fillStyle = withAlpha(props.leftColor ?? theme.primaryColor, 0.1);
-  if (isSideBySide) {
-    ctx.fillRect(0, contentStartY, halfW, canvas.height - contentStartY);
-  } else {
-    ctx.fillRect(0, contentStartY, canvas.width, halfH);
-  }
-  ctx.fillStyle = props.leftColor ?? theme.primaryColor;
-  ctx.font = `bold ${theme.subtitleFontSize * 0.6}px ${font}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(props.leftLabel ?? '', isSideBySide ? halfW / 2 : canvas.width / 2, contentStartY + 40);
-  ctx.font = `${theme.bodyFontSize * 0.6}px ${font}`;
-  ctx.fillStyle = theme.textColor;
-  const leftLines = wrapText(ctx, props.leftContent ?? '', isSideBySide ? halfW * 0.8 : canvas.width * 0.8);
-  leftLines.slice(0, 5).forEach((line, i) => {
-    ctx.fillText(line, isSideBySide ? halfW / 2 : canvas.width / 2, contentStartY + 100 + i * (theme.bodyFontSize * 0.8));
-  });
-  ctx.restore();
 
-  // Right side
-  ctx.save();
-  if (props.animation === 'slideLeft') {
-    ctx.globalAlpha *= clamp01(progress * 2 - 1);
-  }
-  ctx.fillStyle = withAlpha(props.rightColor ?? theme.accentColor, 0.1);
-  if (isSideBySide) {
-    ctx.fillRect(halfW, contentStartY, halfW, canvas.height - contentStartY);
-  } else {
-    ctx.fillRect(0, halfH, canvas.width, halfH);
-  }
-  ctx.fillStyle = props.rightColor ?? theme.accentColor;
-  ctx.font = `bold ${theme.subtitleFontSize * 0.6}px ${font}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(props.rightLabel ?? '', isSideBySide ? halfW + halfW / 2 : canvas.width / 2, isSideBySide ? contentStartY + 40 : halfH + 40);
-  ctx.font = `${theme.bodyFontSize * 0.6}px ${font}`;
-  ctx.fillStyle = theme.textColor;
-  const rightLines = wrapText(ctx, props.rightContent ?? '', isSideBySide ? halfW * 0.8 : canvas.width * 0.8);
-  const rightStartY = isSideBySide ? contentStartY + 100 : halfH + 100;
-  rightLines.slice(0, 5).forEach((line, i) => {
-    ctx.fillText(line, isSideBySide ? halfW + halfW / 2 : canvas.width / 2, rightStartY + i * (theme.bodyFontSize * 0.8));
-  });
-  ctx.restore();
+    // Card background with gradient
+    const leftGrad = ctx.createLinearGradient(lx, ly, lx, ly + contentH);
+    leftGrad.addColorStop(0, withAlpha(leftColor, 0.15));
+    leftGrad.addColorStop(1, withAlpha(leftColor, 0.03));
+    ctx.fillStyle = leftGrad;
+    roundRectPath(ctx, lx, ly, panelW, contentH, 16);
+    ctx.fill();
 
-  // Divider
-  if (dividerStyle === 'line') {
-    ctx.strokeStyle = withAlpha(theme.textColor, 0.2);
+    // Glow border
+    ctx.shadowColor = leftColor;
+    ctx.shadowBlur = 15;
+    ctx.strokeStyle = withAlpha(leftColor, 0.5);
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    if (isSideBySide) {
-      ctx.moveTo(halfW, contentStartY);
-      ctx.lineTo(halfW, canvas.height);
-    } else {
-      ctx.moveTo(0, halfH);
-      ctx.lineTo(canvas.width, halfH);
-    }
+    roundRectPath(ctx, lx, ly, panelW, contentH, 16);
     ctx.stroke();
-  } else if (dividerStyle === 'VS') {
-    ctx.font = `bold ${theme.titleFontSize * 0.5}px ${font}`;
-    ctx.fillStyle = theme.textSecondaryColor;
+    ctx.shadowBlur = 0;
+
+    // Left label badge
+    const labelY = ly + 50;
+    ctx.fillStyle = leftColor;
+    ctx.font = `bold ${theme.subtitleFontSize * 0.7}px ${font}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    if (isSideBySide) {
-      ctx.fillText('VS', halfW, canvas.height / 2);
-    } else {
-      ctx.fillText('VS', canvas.width / 2, halfH);
+    ctx.fillText(props.leftLabel ?? '', lx + panelW / 2, labelY);
+
+    // Left content
+    ctx.font = `${theme.bodyFontSize * 0.65}px ${font}`;
+    ctx.fillStyle = theme.textColor;
+    const leftLines = wrapText(ctx, props.leftContent ?? '', panelW * 0.85);
+    const leftStartY = labelY + 50;
+    leftLines.slice(0, 6).forEach((line, i) => {
+      ctx.fillText(line, lx + panelW / 2, leftStartY + i * (theme.bodyFontSize * 0.85));
+    });
+    ctx.restore();
+
+    // ---- Right panel ----
+    const rx = canvas.width - padding - panelW + slideOffset;
+    ctx.save();
+    ctx.globalAlpha *= clamp01(progress * 2 - 0.5);
+
+    const rightGrad = ctx.createLinearGradient(rx, contentTop, rx, contentBottom);
+    rightGrad.addColorStop(0, withAlpha(rightColor, 0.15));
+    rightGrad.addColorStop(1, withAlpha(rightColor, 0.03));
+    ctx.fillStyle = rightGrad;
+    roundRectPath(ctx, rx, contentTop, panelW, contentH, 16);
+    ctx.fill();
+
+    ctx.shadowColor = rightColor;
+    ctx.shadowBlur = 15;
+    ctx.strokeStyle = withAlpha(rightColor, 0.5);
+    ctx.lineWidth = 2;
+    roundRectPath(ctx, rx, contentTop, panelW, contentH, 16);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    const rLabelY = contentTop + 50;
+    ctx.fillStyle = rightColor;
+    ctx.font = `bold ${theme.subtitleFontSize * 0.7}px ${font}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(props.rightLabel ?? '', rx + panelW / 2, rLabelY);
+
+    ctx.font = `${theme.bodyFontSize * 0.65}px ${font}`;
+    ctx.fillStyle = theme.textColor;
+    const rightLines = wrapText(ctx, props.rightContent ?? '', panelW * 0.85);
+    const rightStartY = rLabelY + 50;
+    rightLines.slice(0, 6).forEach((line, i) => {
+      ctx.fillText(line, rx + panelW / 2, rightStartY + i * (theme.bodyFontSize * 0.85));
+    });
+    ctx.restore();
+
+    // ---- VS badge in center ----
+    const vsScale = EASINGS.easeOutBack(clamp01(progress * 1.5));
+    if (vsScale > 0.01) {
+      const vsX = canvas.width / 2;
+      const vsY = (contentTop + contentBottom) / 2;
+      const vsR = 36 * vsScale;
+
+      ctx.save();
+      ctx.translate(vsX, vsY);
+
+      // Glow
+      ctx.shadowColor = theme.primaryColor;
+      ctx.shadowBlur = 30;
+
+      // Outer ring
+      ctx.strokeStyle = theme.primaryColor;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, vsR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Inner fill
+      ctx.fillStyle = theme.cardBgColor;
+      ctx.beginPath();
+      ctx.arc(0, 0, vsR - 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // VS text
+      ctx.font = `bold ${theme.subtitleFontSize * 0.7 * vsScale}px ${font}`;
+      ctx.fillStyle = theme.primaryColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('VS', 0, 0);
+      ctx.restore();
+    }
+  } else {
+    // Top-bottom layout
+    const panelH = (contentH - padding) / 2;
+
+    // Top panel (left content)
+    const topSlide = (1 - EASINGS.easeOut(progress)) * 60;
+    ctx.save();
+    ctx.globalAlpha *= clamp01(progress * 2);
+    const tGrad = ctx.createLinearGradient(padding, contentTop, canvas.width - padding, contentTop + panelH);
+    tGrad.addColorStop(0, withAlpha(leftColor, 0.15));
+    tGrad.addColorStop(1, withAlpha(leftColor, 0.03));
+    ctx.fillStyle = tGrad;
+    roundRectPath(ctx, padding, contentTop - topSlide, canvas.width - padding * 2, panelH, 16);
+    ctx.fill();
+    ctx.shadowColor = leftColor;
+    ctx.shadowBlur = 15;
+    ctx.strokeStyle = withAlpha(leftColor, 0.5);
+    ctx.lineWidth = 2;
+    roundRectPath(ctx, padding, contentTop - topSlide, canvas.width - padding * 2, panelH, 16);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = leftColor;
+    ctx.font = `bold ${theme.subtitleFontSize * 0.7}px ${font}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(props.leftLabel ?? '', canvas.width / 2, contentTop + 45 - topSlide);
+    ctx.font = `${theme.bodyFontSize * 0.65}px ${font}`;
+    ctx.fillStyle = theme.textColor;
+    const topLines = wrapText(ctx, props.leftContent ?? '', canvas.width * 0.8);
+    topLines.slice(0, 3).forEach((line, i) => {
+      ctx.fillText(line, canvas.width / 2, contentTop + 95 - topSlide + i * (theme.bodyFontSize * 0.85));
+    });
+    ctx.restore();
+
+    // Bottom panel (right content)
+    ctx.save();
+    ctx.globalAlpha *= clamp01(progress * 2 - 0.5);
+    const bY = contentTop + panelH + padding;
+    const bSlide = (1 - EASINGS.easeOut(progress)) * 60;
+    const bGrad = ctx.createLinearGradient(padding, bY, canvas.width - padding, bY + panelH);
+    bGrad.addColorStop(0, withAlpha(rightColor, 0.15));
+    bGrad.addColorStop(1, withAlpha(rightColor, 0.03));
+    ctx.fillStyle = bGrad;
+    roundRectPath(ctx, padding, bY + bSlide, canvas.width - padding * 2, panelH, 16);
+    ctx.fill();
+    ctx.shadowColor = rightColor;
+    ctx.shadowBlur = 15;
+    ctx.strokeStyle = withAlpha(rightColor, 0.5);
+    ctx.lineWidth = 2;
+    roundRectPath(ctx, padding, bY + bSlide, canvas.width - padding * 2, panelH, 16);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = rightColor;
+    ctx.font = `bold ${theme.subtitleFontSize * 0.7}px ${font}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(props.rightLabel ?? '', canvas.width / 2, bY + 45 + bSlide);
+    ctx.font = `${theme.bodyFontSize * 0.65}px ${font}`;
+    ctx.fillStyle = theme.textColor;
+    const botLines = wrapText(ctx, props.rightContent ?? '', canvas.width * 0.8);
+    botLines.slice(0, 3).forEach((line, i) => {
+      ctx.fillText(line, canvas.width / 2, bY + 95 + bSlide + i * (theme.bodyFontSize * 0.85));
+    });
+    ctx.restore();
+
+    // VS badge
+    const vsScale = EASINGS.easeOutBack(clamp01(progress * 1.5));
+    if (vsScale > 0.01) {
+      const vsY = contentTop + panelH + padding / 2;
+      const vsR = 28 * vsScale;
+      ctx.save();
+      ctx.translate(canvas.width / 2, vsY);
+      ctx.shadowColor = theme.primaryColor;
+      ctx.shadowBlur = 25;
+      ctx.strokeStyle = theme.primaryColor;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, vsR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = theme.cardBgColor;
+      ctx.beginPath();
+      ctx.arc(0, 0, vsR - 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.font = `bold ${theme.subtitleFontSize * 0.55 * vsScale}px ${font}`;
+      ctx.fillStyle = theme.primaryColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('VS', 0, 0);
+      ctx.restore();
     }
   }
 
@@ -1644,186 +1472,6 @@ export function drawNumberAnimation(
       ctx.fill();
       ctx.restore();
     }
-  }
-}
-
-// ============================================================
-// TagCloud
-// ============================================================
-export function drawTagCloud(
-  dc: DrawContext,
-  props: TagCloudProps,
-  localTime: number,
-  duration: number,
-  theme: ThemeTokens,
-): void {
-  const { ctx, canvas } = dc;
-  const font = theme.fontFamily;
-  const tags = props.tags ?? [];
-  if (tags.length === 0) return;
-
-  const layout = props.layout ?? 'grid';
-  const minFontSize = props.minFontSize ?? 34;
-  const maxFontSize = props.maxFontSize ?? 68;
-  const staggerDelay = props.staggerDelay ?? 0.15;
-  const localProgress = clamp01(localTime / (duration * ANIMATION_PHASE));
-
-  // Background
-  ctx.fillStyle = props.bgColor ?? theme.cardBgColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  if (layout === 'grid') {
-    // Calculate grid: prefer fewer columns for larger tags on mobile
-    const cols = tags.length <= 4 ? 2 : Math.ceil(Math.sqrt(tags.length));
-    const rows = Math.ceil(tags.length / cols);
-    const padding = 60;
-    const usableW = canvas.width - padding * 2;
-    const usableH = canvas.height - padding * 2;
-    const cellW = usableW / cols;
-    const cellH = usableH / rows;
-
-    tags.forEach((tag, i) => {
-      let tagProgress: number;
-      if (props.animation === 'fadeInSequential') {
-        tagProgress = clamp01((localTime - i * staggerDelay) / (duration * ANIMATION_PHASE - i * staggerDelay));
-      } else if (props.animation === 'fadeInAll') {
-        tagProgress = localProgress;
-      } else {
-        tagProgress = localProgress;
-      }
-      if (tagProgress <= 0) return;
-
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = padding + cellW * col + cellW / 2;
-      const y = padding + cellH * row + cellH / 2;
-      const fontSize = tag.size ?? Math.max(minFontSize, Math.min(maxFontSize, Math.floor(cellW * 0.28)));
-
-      const tagColor = tag.color ?? theme.chartColors[i % theme.chartColors.length];
-      const text = tag.text ?? '';
-
-      ctx.save();
-      ctx.globalAlpha *= tagProgress;
-      if (props.animation === 'floatIn') {
-        ctx.translate(0, (1 - tagProgress) * 30);
-      }
-      ctx.font = `bold ${fontSize}px ${font}`;
-      ctx.fillStyle = tagColor;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      // Draw pill background
-      const textWidth = ctx.measureText(text).width;
-      const pillW = textWidth + fontSize * 0.8;
-      const pillH = fontSize * 1.6;
-      const pillX = x - pillW / 2;
-      const pillY = y - pillH / 2;
-      const radius = pillH / 2;
-      ctx.beginPath();
-      ctx.moveTo(pillX + radius, pillY);
-      ctx.lineTo(pillX + pillW - radius, pillY);
-      ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + radius);
-      ctx.lineTo(pillX + pillW, pillY + pillH - radius);
-      ctx.quadraticCurveTo(pillX + pillW, pillY + pillH, pillX + pillW - radius, pillY + pillH);
-      ctx.lineTo(pillX + radius, pillY + pillH);
-      ctx.quadraticCurveTo(pillX, pillY + pillH, pillX, pillY + pillH - radius);
-      ctx.lineTo(pillX, pillY + radius);
-      ctx.quadraticCurveTo(pillX, pillY, pillX + radius, pillY);
-      ctx.closePath();
-      ctx.fillStyle = withAlpha(tagColor, 0.15);
-      ctx.fill();
-      ctx.strokeStyle = withAlpha(tagColor, 0.5);
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Draw text on top
-      ctx.fillStyle = tagColor;
-      ctx.fillText(text, x, y);
-      ctx.restore();
-    });
-  } else if (layout === 'spiral') {
-    tags.forEach((tag, i) => {
-      let tagProgress: number;
-      if (props.animation === 'fadeInSequential') {
-        tagProgress = clamp01((localTime - i * staggerDelay) / (duration * ANIMATION_PHASE - i * staggerDelay));
-      } else {
-        tagProgress = localProgress;
-      }
-      if (tagProgress <= 0) return;
-
-      const angle = i * 0.5;
-      const r = 40 * Math.sqrt(i);
-      const x = canvas.width / 2 + r * Math.cos(angle);
-      const y = canvas.height / 2 + r * Math.sin(angle);
-      const fontSize = tag.size ?? (minFontSize + (maxFontSize - minFontSize) * (1 - i / tags.length));
-
-      ctx.save();
-      ctx.globalAlpha *= tagProgress;
-      ctx.font = `bold ${fontSize}px ${font}`;
-      ctx.fillStyle = tag.color ?? theme.chartColors[i % theme.chartColors.length];
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(tag.text ?? '', x, y);
-      ctx.restore();
-    });
-  } else {
-    // random fallback — also use grid for clean look
-    const cols = Math.min(tags.length, 2);
-    const rows = Math.ceil(tags.length / cols);
-    const cellW = canvas.width / cols;
-    const cellH = canvas.height / rows;
-
-    tags.forEach((tag, i) => {
-      let tagProgress: number;
-      if (props.animation === 'fadeInSequential') {
-        tagProgress = clamp01((localTime - i * staggerDelay) / (duration * ANIMATION_PHASE - i * staggerDelay));
-      } else {
-        tagProgress = localProgress;
-      }
-      if (tagProgress <= 0) return;
-
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = cellW * col + cellW / 2;
-      const y = cellH * row + cellH / 2;
-      const fontSize = tag.size ?? (minFontSize + (maxFontSize - minFontSize) * (0.4 + 0.6 * Math.abs(Math.sin(i * 1.7))));
-
-      ctx.save();
-      ctx.globalAlpha *= tagProgress;
-      ctx.font = `bold ${fontSize}px ${font}`;
-      const textWidth = ctx.measureText(tag.text ?? '').width;
-      const padX = fontSize * 0.5;
-      const padY = fontSize * 0.35;
-      const pillW = textWidth + padX * 2;
-      const pillH = fontSize + padY * 2;
-      const pillX = x - pillW / 2;
-      const pillY = y - pillH / 2;
-      const tagColor = tag.color ?? theme.chartColors[i % theme.chartColors.length];
-      const r = pillH / 2;
-
-      ctx.beginPath();
-      ctx.moveTo(pillX + r, pillY);
-      ctx.lineTo(pillX + pillW - r, pillY);
-      ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + r);
-      ctx.lineTo(pillX + pillW, pillY + pillH - r);
-      ctx.quadraticCurveTo(pillX + pillW, pillY + pillH, pillX + pillW - r, pillY + pillH);
-      ctx.lineTo(pillX + r, pillY + pillH);
-      ctx.quadraticCurveTo(pillX, pillY + pillH, pillX, pillY + pillH - r);
-      ctx.lineTo(pillX, pillY + r);
-      ctx.quadraticCurveTo(pillX, pillY, pillX + r, pillY);
-      ctx.closePath();
-      ctx.fillStyle = withAlpha(tagColor, 0.15);
-      ctx.fill();
-      ctx.strokeStyle = withAlpha(tagColor, 0.5);
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      ctx.fillStyle = tagColor;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(tag.text ?? '', x, y);
-      ctx.restore();
-    });
   }
 }
 
@@ -2089,32 +1737,20 @@ export function drawSegment(
     case 'quote_card':
       drawQuoteCard(dc, segment.props as QuoteCardProps, localTime, duration, theme);
       break;
-    case 'end_card':
-      drawEndCard(dc, segment.props as EndCardProps, localTime, duration, theme);
-      break;
     case 'pie_chart':
       drawPieChart(dc, segment.props as PieChartProps, localTime, duration, theme);
       break;
     case 'line_chart':
       drawLineChart(dc, segment.props as LineChartProps, localTime, duration, theme);
       break;
-    case 'image_show':
-      void drawImageShow(dc, segment.props as ImageShowProps, localTime, duration, theme);
-      break;
     case 'process_flow':
       drawProcessFlow(dc, segment.props as ProcessFlowProps, localTime, duration, theme);
-      break;
-    case 'persona_card':
-      drawPersonaCard(dc, segment.props as PersonaCardProps, localTime, duration, theme);
       break;
     case 'compare_card':
       drawCompareCard(dc, segment.props as CompareCardProps, localTime, duration, theme);
       break;
     case 'number_animation':
       drawNumberAnimation(dc, segment.props as NumberAnimationProps, localTime, duration, theme);
-      break;
-    case 'tag_cloud':
-      drawTagCloud(dc, segment.props as TagCloudProps, localTime, duration, theme);
       break;
     case 'progress_timeline':
       drawProgressTimeline(dc, segment.props as ProgressTimelineProps, localTime, duration, theme);

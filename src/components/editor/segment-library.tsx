@@ -9,14 +9,10 @@ import {
   TrendingUp,
   Highlighter,
   Quote,
-  Image,
   Workflow,
-  User,
   Columns2,
   Hash,
-  Tags,
   GitCommitVertical,
-  Flag,
   Layers,
 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
@@ -28,14 +24,10 @@ const ICONS: Record<string, typeof Type> = {
   'trending-up': TrendingUp,
   highlighter: Highlighter,
   quote: Quote,
-  image: Image,
-  workflow: Workflow,
-  user: User,
+  'git-branch': Workflow,
   'columns-2': Columns2,
   hash: Hash,
-  tags: Tags,
   'git-commit-vertical': GitCommitVertical,
-  flag: Flag,
   layers: Layers,
 };
 

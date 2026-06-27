@@ -10,14 +10,10 @@ export type SegmentType =
   | 'line_chart'
   | 'keyword_highlight'
   | 'quote_card'
-  | 'image_show'
   | 'process_flow'
-  | 'persona_card'
   | 'compare_card'
   | 'number_animation'
-  | 'tag_cloud'
   | 'progress_timeline'
-  | 'end_card'
   | 'background';
 
 /** Transition types for segment in/out */
@@ -56,14 +52,10 @@ export type SegmentProps =
   | LineChartProps
   | KeywordHighlightProps
   | QuoteCardProps
-  | ImageShowProps
   | ProcessFlowProps
-  | PersonaCardProps
   | CompareCardProps
   | NumberAnimationProps
-  | TagCloudProps
   | ProgressTimelineProps
-  | EndCardProps
   | BackgroundProps;
 
 // ---- TextCard ----
@@ -120,17 +112,6 @@ export interface QuoteCardProps {
   animation: 'fadeIn' | 'slideUp' | 'scaleIn';
 }
 
-// ---- EndCard ----
-export interface EndCardProps {
-  brandName: string;
-  slogan: string;
-  ctaText: string;
-  ctaUrl: string;
-  bgColor: string;
-  animation: 'fadeIn' | 'scaleIn' | 'slideUp';
-  fadeOut: boolean;
-}
-
 // ---- PieChart ----
 export interface PieChartProps {
   title: string;
@@ -155,19 +136,6 @@ export interface LineChartProps {
   fillArea: boolean;
 }
 
-// ---- ImageShow ----
-export interface ImageShowProps {
-  imageUrl: string;
-  fit: 'cover' | 'contain' | 'fill';
-  filter: 'none' | 'grayscale' | 'sepia' | 'blur' | 'darken';
-  overlayText: string;
-  overlayPosition: 'top' | 'center' | 'bottom';
-  animation: 'kenBurns' | 'fadeIn' | 'slideIn';
-  kenBurnsScale: number;
-  kenBurnsDirection: 'zoomIn' | 'zoomOut' | 'panLeft' | 'panRight' | 'panUp' | 'panDown';
-  roundedCorners: number;
-}
-
 // ---- ProcessFlow ----
 export interface ProcessFlowProps {
   title: string;
@@ -178,19 +146,6 @@ export interface ProcessFlowProps {
   animation: 'sequential' | 'fadeInAll';
   stepDelay: number;
   iconType: 'number' | 'dot' | 'check';
-}
-
-// ---- PersonaCard ----
-export interface PersonaCardProps {
-  name: string;
-  title: string;
-  description: string;
-  avatarUrl: string;
-  avatarShape: 'circle' | 'square' | 'rounded';
-  bgColor: string;
-  animation: 'slideLeft' | 'slideRight' | 'fadeIn' | 'scaleIn';
-  showBorder: boolean;
-  borderColor: string;
 }
 
 // ---- CompareCard ----
@@ -219,17 +174,6 @@ export interface NumberAnimationProps {
   bgColor: string;
   label: string;
   easing: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut' | 'bounce';
-}
-
-// ---- TagCloud ----
-export interface TagCloudProps {
-  tags: { text: string; color?: string; size?: number }[];
-  bgColor: string;
-  layout: 'random' | 'grid' | 'spiral';
-  animation: 'fadeInSequential' | 'fadeInAll' | 'floatIn';
-  staggerDelay: number;
-  minFontSize: number;
-  maxFontSize: number;
 }
 
 // ---- ProgressTimeline ----

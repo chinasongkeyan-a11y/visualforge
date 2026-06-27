@@ -20,14 +20,10 @@ import type {
   LineChartProps,
   KeywordHighlightProps,
   QuoteCardProps,
-  ImageShowProps,
   ProcessFlowProps,
-  PersonaCardProps,
   CompareCardProps,
   NumberAnimationProps,
-  TagCloudProps,
   ProgressTimelineProps,
-  EndCardProps,
   BackgroundProps,
   ThemeTokens,
 } from './types';
@@ -47,13 +43,6 @@ export interface SimplifiedSegment {
   text?: string;
   quote?: string;
   author?: string;
-  imageUrl?: string;
-  overlayText?: string;
-  name?: string;
-  description?: string;
-  brandName?: string;
-  slogan?: string;
-  ctaText?: string;
   endValue?: number;
   startValue?: number;
   prefix?: string;
@@ -69,7 +58,6 @@ export interface SimplifiedSegment {
   data?: Array<{ label: string; value: number; color?: string }>;
   series?: Array<{ name: string; data: number[]; color?: string }>;
   steps?: Array<{ title: string; description: string }>;
-  tags?: string[];
   nodes?: string[];
 }
 
@@ -90,21 +78,16 @@ function getAutoTransitionIn(type: SegmentType): Segment['transitionIn'] {
     line_chart: 'fadeIn',
     keyword_highlight: 'scaleIn',
     quote_card: 'slideUp',
-    image_show: 'fadeIn',
     process_flow: 'fadeIn',
-    persona_card: 'fadeIn',
     compare_card: 'fadeIn',
     number_animation: 'fadeIn',
-    tag_cloud: 'fadeIn',
     progress_timeline: 'fadeIn',
-    end_card: 'scaleIn',
     background: 'none',
   };
   return map[type] ?? 'fadeIn';
 }
 
-function getAutoTransitionOut(type: SegmentType): Segment['transitionOut'] {
-  if (type === 'end_card') return 'fadeOut';
+function getAutoTransitionOut(_type: SegmentType): Segment['transitionOut'] {
   return 'none';
 }
 
@@ -226,23 +209,6 @@ function buildQuoteCardProps(
   };
 }
 
-function buildImageShowProps(
-  seg: SimplifiedSegment,
-  _t: ThemeTokens,
-): ImageShowProps {
-  return {
-    imageUrl: seg.imageUrl ?? '',
-    fit: 'cover',
-    filter: 'none',
-    overlayText: seg.overlayText ?? '',
-    overlayPosition: 'center',
-    animation: 'kenBurns',
-    kenBurnsScale: 1.3,
-    kenBurnsDirection: 'zoomIn',
-    roundedCorners: 0,
-  };
-}
-
 function buildProcessFlowProps(
   seg: SimplifiedSegment,
   _t: ThemeTokens,
@@ -256,23 +222,6 @@ function buildProcessFlowProps(
     animation: 'sequential',
     stepDelay: 0.4,
     iconType: 'number',
-  };
-}
-
-function buildPersonaCardProps(
-  seg: SimplifiedSegment,
-  t: ThemeTokens,
-): PersonaCardProps {
-  return {
-    name: seg.name ?? '',
-    title: seg.title ?? '',
-    description: seg.description ?? '',
-    avatarUrl: '',
-    avatarShape: 'circle',
-    bgColor: t.bgColor,
-    animation: 'slideLeft',
-    showBorder: true,
-    borderColor: t.primaryColor,
   };
 }
 
@@ -312,21 +261,6 @@ function buildNumberAnimationProps(
   };
 }
 
-function buildTagCloudProps(
-  seg: SimplifiedSegment,
-  t: ThemeTokens,
-): TagCloudProps {
-  return {
-    tags: (seg.tags ?? []).map((text) => ({ text })),
-    bgColor: t.bgColor,
-    layout: 'grid',
-    animation: 'fadeInSequential',
-    staggerDelay: 0.12,
-    minFontSize: 32,
-    maxFontSize: 64,
-  };
-}
-
 function buildProgressTimelineProps(
   seg: SimplifiedSegment,
   _t: ThemeTokens,
@@ -339,21 +273,6 @@ function buildProgressTimelineProps(
     nodeShape: 'circle',
     animation: 'draw',
     showProgress: true,
-  };
-}
-
-function buildEndCardProps(
-  seg: SimplifiedSegment,
-  t: ThemeTokens,
-): EndCardProps {
-  return {
-    brandName: seg.brandName ?? '',
-    slogan: seg.slogan ?? '',
-    ctaText: seg.ctaText ?? '',
-    ctaUrl: '',
-    bgColor: t.bgDarkColor,
-    animation: 'fadeIn',
-    fadeOut: true,
   };
 }
 
@@ -390,14 +309,10 @@ function buildProps(
     case 'line_chart': return buildLineChartProps(seg, t);
     case 'keyword_highlight': return buildKeywordHighlightProps(seg, t);
     case 'quote_card': return buildQuoteCardProps(seg, t);
-    case 'image_show': return buildImageShowProps(seg, t);
     case 'process_flow': return buildProcessFlowProps(seg, t);
-    case 'persona_card': return buildPersonaCardProps(seg, t);
     case 'compare_card': return buildCompareCardProps(seg, t);
     case 'number_animation': return buildNumberAnimationProps(seg, t);
-    case 'tag_cloud': return buildTagCloudProps(seg, t);
     case 'progress_timeline': return buildProgressTimelineProps(seg, t);
-    case 'end_card': return buildEndCardProps(seg, t);
     case 'background': return buildBackgroundProps(seg, t);
     default:
       throw new Error(`Unknown segment type: ${seg.type satisfies never}`);

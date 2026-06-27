@@ -11,14 +11,10 @@ const SEGMENT_TABLE = [
   { type: 'keyword_highlight', name: '关键词高亮', fields: 'text' },
   { type: 'quote_card', name: '引用卡片', fields: 'quote, author' },
   { type: 'number_animation', name: '数字动画', fields: 'endValue, suffix, label' },
-  { type: 'tag_cloud', name: '标签云', fields: 'tags[]' },
   { type: 'progress_timeline', name: '进度时间轴', fields: 'title, nodes[]' },
   { type: 'process_flow', name: '流程图', fields: 'title, steps[{title,description}]' },
-  { type: 'persona_card', name: '人物卡片', fields: 'name, title, description' },
-  { type: 'compare_card', name: '对比卡片', fields: 'title, leftContent, rightContent' },
-  { type: 'image_show', name: '图片展示', fields: 'imageUrl, overlayText' },
+  { type: 'compare_card', name: '对比卡片', fields: 'title, leftLabel, leftContent, rightLabel, rightContent' },
   { type: 'background', name: '背景', fields: 'bgType (gradient/particle/grid)' },
-  { type: 'end_card', name: '结尾卡片', fields: 'brandName, slogan, ctaText' },
 ];
 
 export default function DocsPage() {
@@ -49,8 +45,9 @@ curl -X POST https://your-domain/api/render \\
     "segments": [
       { "type": "text_card", "start": 0, "duration": 3,
         "title": "你好世界", "subtitle": "VisualForge" },
-      { "type": "end_card", "start": 3, "duration": 3,
-        "brandName": "MyBrand", "slogan": "Build the Future" }
+      { "type": "bar_chart", "start": 3, "duration": 4,
+        "title": "数据对比",
+        "data": [{"label":"A","value":80},{"label":"B","value":45}] }
     ]
   }'
 
@@ -199,15 +196,13 @@ curl https://your-domain/api/render/r_abc123/status
         { "label": "华北", "value": 320 },
         { "label": "华东", "value": 450 },
         { "label": "华南", "value": 280 }
-      ] },
-    { "type": "end_card", "start": 5, "duration": 3,
-      "brandName": "MyBrand", "slogan": "未来已来" }
+      ] }
   ]
 }`}</code></pre>
         </div>
 
         <div className="mb-8">
-          <h3 className="text-sm font-semibold text-[#D4AF37] mb-2">示例 2：数据报告（10 秒）</h3>
+          <h3 className="text-sm font-semibold text-[#D4AF37] mb-2">示例 2：数据报告（8 秒）</h3>
           <pre className="text-xs bg-[#161b22] border border-[#30363d] rounded-md p-4 overflow-x-auto text-[#e6edf3] leading-relaxed"><code>{`{
   "segments": [
     { "type": "number_animation", "start": 0, "duration": 3,
@@ -224,29 +219,28 @@ curl https://your-domain/api/render/r_abc123/status
       "series": [
         { "name": "用户", "data": [100, 600, 2400, 3800] },
         { "name": "收入", "data": [50, 420, 1800, 3200] }
-      ] },
-    { "type": "end_card", "start": 8, "duration": 2,
-      "brandName": "DataCorp", "slogan": "数据驱动决策" }
+      ] }
   ]
 }`}</code></pre>
         </div>
 
         <div className="mb-8">
-          <h3 className="text-sm font-semibold text-[#D4AF37] mb-2">示例 3：人物介绍 + 流程（8 秒）</h3>
+          <h3 className="text-sm font-semibold text-[#D4AF37] mb-2">示例 3：流程 + 对比（10 秒）</h3>
           <pre className="text-xs bg-[#161b22] border border-[#30363d] rounded-md p-4 overflow-x-auto text-[#e6edf3] leading-relaxed"><code>{`{
   "segments": [
-    { "type": "quote_card", "start": 0, "duration": 3,
-      "quote": "简洁是终极的复杂。",
-      "author": "Leonardo da Vinci" },
-    { "type": "persona_card", "start": 3, "duration": 3,
-      "name": "张三", "title": "首席设计师",
-      "description": "十年品牌设计经验，擅长视觉叙事" },
-    { "type": "process_flow", "start": 6, "duration": 2,
+    { "type": "process_flow", "start": 0, "duration": 4,
       "title": "设计流程",
       "steps": [
         { "title": "调研", "description": "理解用户需求" },
+        { "title": "设计", "description": "确定设计方向" },
         { "title": "交付", "description": "发布最终产品" }
-      ] }
+      ] },
+    { "type": "compare_card", "start": 4, "duration": 4,
+      "title": "改造前后",
+      "leftLabel": "改造前", "leftContent": "手动制作，8小时一条",
+      "rightLabel": "改造后", "rightContent": "API驱动，30秒一条" },
+    { "type": "keyword_highlight", "start": 8, "duration": 2,
+      "text": "效率提升" }
   ]
 }`}</code></pre>
         </div>
