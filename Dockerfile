@@ -38,9 +38,9 @@ RUN mkdir -p /app/renders
 # Environment
 ENV NODE_ENV=production
 ENV COZE_PROJECT_ENV=PROD
-ENV PORT=5000
+ENV PORT=7777
 ENV RENDERS_DIR=/app/renders
 
-EXPOSE 5000
+EXPOSE 7777
 
 CMD ["node", "dist/server.js"]
