@@ -586,6 +586,7 @@ export function drawPieChart(
     const sliceAngle = ((item.value ?? 0) / total) * Math.PI * 2 * animProgress;
     const color = item.color ?? theme.chartColors[i % theme.chartColors.length];
 
+    // Fill slice
     ctx.beginPath();
     ctx.moveTo(centerX, chartCenterY);
     ctx.arc(centerX, chartCenterY, radius, startAngle, startAngle + sliceAngle);
@@ -593,15 +594,23 @@ export function drawPieChart(
     ctx.fillStyle = color;
     ctx.fill();
 
+    // Separator stroke between slices for clarity
+    ctx.strokeStyle = theme.cardBgColor;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(centerX, chartCenterY);
+    ctx.lineTo(centerX + Math.cos(startAngle) * radius, chartCenterY + Math.sin(startAngle) * radius);
+    ctx.stroke();
+
     // Labels
     if (showLabels && animProgress > 0.5) {
       const midAngle = startAngle + sliceAngle / 2;
-      const labelRadius = radius * 1.15;
+      const labelRadius = radius * 1.18;
       const lx = centerX + Math.cos(midAngle) * labelRadius;
       const ly = chartCenterY + Math.sin(midAngle) * labelRadius;
       const percent = ((item.value ?? 0) / total * 100).toFixed(1);
 
-      ctx.font = `${theme.bodyFontSize * 0.6}px ${font}`;
+      ctx.font = `bold ${theme.bodyFontSize * 0.7}px ${font}`;
       ctx.fillStyle = theme.textColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -617,7 +626,13 @@ export function drawPieChart(
 
   // Donut center text
   if (donutMode && centerText && animProgress > 0.5) {
-    ctx.font = `bold ${theme.subtitleFontSize * 0.7}px ${font}`;
+    // Clear center with bg color for clean donut hole
+    ctx.fillStyle = theme.cardBgColor;
+    ctx.beginPath();
+    ctx.arc(centerX, chartCenterY, innerRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.font = `bold ${theme.subtitleFontSize}px ${font}`;
     ctx.fillStyle = theme.primaryColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -628,19 +643,19 @@ export function drawPieChart(
 
   // Legend
   if (showLegend) {
-    const legendY = canvas.height * 0.85;
+    const legendY = canvas.height * 0.82;
     const legendItemWidth = canvas.width / data.length;
     data.forEach((item, i) => {
-      const lx = legendItemWidth * i + 20;
+      const lx = legendItemWidth * i + 24;
       const color = item.color ?? theme.chartColors[i % theme.chartColors.length];
       ctx.fillStyle = color;
-      roundRectPath(ctx, lx, legendY, 24, 24, 4);
+      roundRectPath(ctx, lx, legendY, 28, 28, 6);
       ctx.fill();
-      ctx.font = `${theme.bodyFontSize * 0.5}px ${font}`;
-      ctx.fillStyle = theme.textSecondaryColor;
+      ctx.font = `${theme.bodyFontSize * 0.65}px ${font}`;
+      ctx.fillStyle = theme.textColor;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(item.label ?? '', lx + 32, legendY + 12);
+      ctx.fillText(item.label ?? '', lx + 36, legendY + 14);
     });
   }
 }
@@ -674,7 +689,7 @@ export function drawLineChart(
 
   // Title
   if (props.title) {
-    ctx.font = `bold ${theme.titleFontSize * 0.7}px ${font}`;
+    ctx.font = `bold ${theme.titleFontSize * 0.8}px ${font}`;
     ctx.fillStyle = theme.textColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -692,8 +707,8 @@ export function drawLineChart(
 
   // Grid
   if (showGrid) {
-    ctx.strokeStyle = withAlpha(theme.textColor, 0.1);
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = withAlpha(theme.textColor, 0.12);
+    ctx.lineWidth = 1.5;
     for (let i = 0; i <= 5; i++) {
       const y = padding.top + (chartH / 5) * i;
       ctx.beginPath();
@@ -705,14 +720,14 @@ export function drawLineChart(
 
   // X axis labels
   const xLabels = props.xLabels ?? [];
-  ctx.font = `${theme.bodyFontSize * 0.5}px ${font}`;
+  ctx.font = `${theme.bodyFontSize * 0.6}px ${font}`;
   ctx.fillStyle = theme.textSecondaryColor;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   const pointsPerSeries = series[0]?.data?.length ?? 0;
   for (let i = 0; i < pointsPerSeries; i++) {
     const x = padding.left + (chartW / Math.max(pointsPerSeries - 1, 1)) * i;
-    ctx.fillText(xLabels[i] ?? '', x, padding.top + chartH + 10);
+    ctx.fillText(xLabels[i] ?? '', x, padding.top + chartH + 12);
   }
 
   // Draw each series
@@ -735,15 +750,15 @@ export function drawLineChart(
       ctx.lineTo(padding.left + (chartW / Math.max(data.length - 1, 1)) * (visiblePoints - 1), padding.top + chartH);
       ctx.closePath();
       const grad = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
-      grad.addColorStop(0, withAlpha(color, 0.3));
-      grad.addColorStop(1, withAlpha(color, 0));
+      grad.addColorStop(0, withAlpha(color, 0.45));
+      grad.addColorStop(1, withAlpha(color, 0.02));
       ctx.fillStyle = grad;
       ctx.fill();
     }
 
-    // Line
+    // Line — thick and vibrant
     ctx.strokeStyle = color;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 6;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -755,17 +770,43 @@ export function drawLineChart(
     }
     ctx.stroke();
 
-    // Dots
+    // Dots — bigger with white outline for contrast
     if (showDots) {
-      ctx.fillStyle = color;
       for (let i = 0; i < visiblePoints; i++) {
         const x = padding.left + (chartW / Math.max(data.length - 1, 1)) * i;
         const y = padding.top + chartH - (data[i] / yMax) * chartH;
+        // White outline
+        ctx.fillStyle = theme.cardBgColor;
         ctx.beginPath();
-        ctx.arc(x, y, 8, 0, Math.PI * 2);
+        ctx.arc(x, y, 13, 0, Math.PI * 2);
+        ctx.fill();
+        // Color dot
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, 9, 0, Math.PI * 2);
         ctx.fill();
       }
     }
+  });
+
+  // Legend
+  const legendY = canvas.height * 0.93;
+  const legendItemWidth = canvas.width / series.length;
+  series.forEach((s, si) => {
+    const color = s.color ?? theme.chartColors[si % theme.chartColors.length];
+    const lx = legendItemWidth * si + 24;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(lx, legendY + 10);
+    ctx.lineTo(lx + 30, legendY + 10);
+    ctx.stroke();
+    ctx.font = `${theme.bodyFontSize * 0.6}px ${font}`;
+    ctx.fillStyle = theme.textColor;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(s.name ?? '', lx + 38, legendY + 10);
   });
 }
 
@@ -1077,36 +1118,56 @@ export function drawPersonaCard(
     ctx.translate(-centerX, -centerY);
   }
 
-  const avatarSize = 200;
+  const avatarSize = 280;
   const avatarX = centerX - avatarSize / 2;
-  const avatarY = centerY - 200;
+  const avatarY = centerY - 340;
 
-  // Avatar placeholder (draw circle with initials)
+  // Decorative accent bar behind avatar
+  ctx.fillStyle = withAlpha(borderColor, 0.06);
+  ctx.fillRect(0, avatarY - 80, canvas.width, avatarSize + 160);
+
+  // Decorative side accents
+  ctx.fillStyle = withAlpha(borderColor, 0.15);
+  ctx.fillRect(40, avatarY - 80, 6, avatarSize + 160);
+  ctx.fillRect(canvas.width - 46, avatarY - 80, 6, avatarSize + 160);
+
+  // Avatar border ring (outer + inner glow)
   if (showBorder) {
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth = 5;
+    ctx.strokeStyle = withAlpha(borderColor, 0.3);
+    ctx.lineWidth = 2;
     if (avatarShape === 'circle') {
       ctx.beginPath();
-      ctx.arc(centerX, avatarY + avatarSize / 2, avatarSize / 2 + 4, 0, Math.PI * 2);
+      ctx.arc(centerX, avatarY + avatarSize / 2, avatarSize / 2 + 18, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 6;
+    if (avatarShape === 'circle') {
+      ctx.beginPath();
+      ctx.arc(centerX, avatarY + avatarSize / 2, avatarSize / 2 + 8, 0, Math.PI * 2);
       ctx.stroke();
     } else {
-      roundRectPath(ctx, avatarX - 4, avatarY - 4, avatarSize + 8, avatarSize + 8, avatarShape === 'rounded' ? 20 : 0);
+      roundRectPath(ctx, avatarX - 8, avatarY - 8, avatarSize + 16, avatarSize + 16, avatarShape === 'rounded' ? 24 : 0);
       ctx.stroke();
     }
   }
 
-  ctx.fillStyle = theme.primaryColor;
+  // Avatar fill
+  const avatarGrad = ctx.createLinearGradient(avatarX, avatarY, avatarX + avatarSize, avatarY + avatarSize);
+  avatarGrad.addColorStop(0, theme.primaryColor);
+  avatarGrad.addColorStop(1, theme.secondaryColor);
+  ctx.fillStyle = avatarGrad;
   if (avatarShape === 'circle') {
     ctx.beginPath();
     ctx.arc(centerX, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
     ctx.fill();
   } else {
-    roundRectPath(ctx, avatarX, avatarY, avatarSize, avatarSize, avatarShape === 'rounded' ? 16 : 0);
+    roundRectPath(ctx, avatarX, avatarY, avatarSize, avatarSize, avatarShape === 'rounded' ? 20 : 0);
     ctx.fill();
   }
 
   // Initials
-  ctx.font = `bold 80px ${font}`;
+  ctx.font = `bold 120px ${font}`;
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -1114,26 +1175,40 @@ export function drawPersonaCard(
   ctx.fillText(initials, centerX, avatarY + avatarSize / 2);
 
   // Name
-  ctx.font = `bold ${theme.titleFontSize * 0.8}px ${font}`;
+  const nameY = avatarY + avatarSize + 90;
+  ctx.font = `bold ${theme.titleFontSize}px ${font}`;
   ctx.fillStyle = theme.textColor;
-  ctx.fillText(props.name ?? '', centerX, centerY + 50);
+  ctx.fillText(props.name ?? '', centerX, nameY);
 
-  // Title
+  // Title with accent underline
   if (props.title) {
-    ctx.font = `${theme.subtitleFontSize * 0.7}px ${font}`;
+    ctx.font = `${theme.subtitleFontSize}px ${font}`;
     ctx.fillStyle = theme.primaryColor;
-    ctx.fillText(props.title, centerX, centerY + 110);
+    ctx.fillText(props.title, centerX, nameY + 65);
+    // Underline accent
+    const tw = ctx.measureText(props.title).width;
+    ctx.strokeStyle = theme.primaryColor;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(centerX - tw / 2 - 12, nameY + 92);
+    ctx.lineTo(centerX + tw / 2 + 12, nameY + 92);
+    ctx.stroke();
   }
 
   // Description
   if (props.description) {
-    ctx.font = `${theme.bodyFontSize * 0.6}px ${font}`;
+    ctx.font = `${theme.bodyFontSize}px ${font}`;
     ctx.fillStyle = theme.textSecondaryColor;
-    const lines = wrapText(ctx, props.description, canvas.width * 0.8);
+    const lines = wrapText(ctx, props.description, canvas.width * 0.85);
+    const descStartY = nameY + 150;
     lines.slice(0, 3).forEach((line, i) => {
-      ctx.fillText(line, centerX, centerY + 180 + i * (theme.bodyFontSize * 0.8));
+      ctx.fillText(line, centerX, descStartY + i * (theme.bodyFontSize * 1.2));
     });
   }
+
+  // Bottom decorative bar
+  ctx.fillStyle = withAlpha(theme.primaryColor, 0.3);
+  ctx.fillRect(centerX - 100, canvas.height - 120, 200, 4);
 
   ctx.restore();
 }
@@ -1329,10 +1404,14 @@ export function drawTagCloud(
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   if (layout === 'grid') {
-    const cols = Math.ceil(Math.sqrt(tags.length));
+    // Calculate grid: prefer fewer columns for larger tags on mobile
+    const cols = tags.length <= 4 ? 2 : Math.ceil(Math.sqrt(tags.length));
     const rows = Math.ceil(tags.length / cols);
-    const cellW = canvas.width / cols;
-    const cellH = canvas.height / rows;
+    const padding = 60;
+    const usableW = canvas.width - padding * 2;
+    const usableH = canvas.height - padding * 2;
+    const cellW = usableW / cols;
+    const cellH = usableH / rows;
 
     tags.forEach((tag, i) => {
       let tagProgress: number;
@@ -1347,9 +1426,12 @@ export function drawTagCloud(
 
       const col = i % cols;
       const row = Math.floor(i / cols);
-      const x = cellW * col + cellW / 2;
-      const y = cellH * row + cellH / 2;
-      const fontSize = tag.size ?? (minFontSize + (maxFontSize - minFontSize) * (0.3 + 0.7 * Math.abs(Math.sin(i))));
+      const x = padding + cellW * col + cellW / 2;
+      const y = padding + cellH * row + cellH / 2;
+      const fontSize = tag.size ?? Math.max(minFontSize, Math.min(maxFontSize, Math.floor(cellW * 0.28)));
+
+      const tagColor = tag.color ?? theme.chartColors[i % theme.chartColors.length];
+      const text = tag.text ?? '';
 
       ctx.save();
       ctx.globalAlpha *= tagProgress;
@@ -1357,10 +1439,37 @@ export function drawTagCloud(
         ctx.translate(0, (1 - tagProgress) * 30);
       }
       ctx.font = `bold ${fontSize}px ${font}`;
-      ctx.fillStyle = tag.color ?? theme.chartColors[i % theme.chartColors.length];
+      ctx.fillStyle = tagColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(tag.text ?? '', x, y);
+
+      // Draw pill background
+      const textWidth = ctx.measureText(text).width;
+      const pillW = textWidth + fontSize * 0.8;
+      const pillH = fontSize * 1.6;
+      const pillX = x - pillW / 2;
+      const pillY = y - pillH / 2;
+      const radius = pillH / 2;
+      ctx.beginPath();
+      ctx.moveTo(pillX + radius, pillY);
+      ctx.lineTo(pillX + pillW - radius, pillY);
+      ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + radius);
+      ctx.lineTo(pillX + pillW, pillY + pillH - radius);
+      ctx.quadraticCurveTo(pillX + pillW, pillY + pillH, pillX + pillW - radius, pillY + pillH);
+      ctx.lineTo(pillX + radius, pillY + pillH);
+      ctx.quadraticCurveTo(pillX, pillY + pillH, pillX, pillY + pillH - radius);
+      ctx.lineTo(pillX, pillY + radius);
+      ctx.quadraticCurveTo(pillX, pillY, pillX + radius, pillY);
+      ctx.closePath();
+      ctx.fillStyle = withAlpha(tagColor, 0.15);
+      ctx.fill();
+      ctx.strokeStyle = withAlpha(tagColor, 0.5);
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw text on top
+      ctx.fillStyle = tagColor;
+      ctx.fillText(text, x, y);
       ctx.restore();
     });
   } else if (layout === 'spiral') {
@@ -1389,7 +1498,12 @@ export function drawTagCloud(
       ctx.restore();
     });
   } else {
-    // random
+    // random fallback — also use grid for clean look
+    const cols = Math.min(tags.length, 2);
+    const rows = Math.ceil(tags.length / cols);
+    const cellW = canvas.width / cols;
+    const cellH = canvas.height / rows;
+
     tags.forEach((tag, i) => {
       let tagProgress: number;
       if (props.animation === 'fadeInSequential') {
@@ -1399,15 +1513,43 @@ export function drawTagCloud(
       }
       if (tagProgress <= 0) return;
 
-      const seed = i * 9973;
-      const x = ((seed * 1.1) % (canvas.width - 200)) + 100;
-      const y = ((seed * 1.7) % (canvas.height - 200)) + 100;
-      const fontSize = tag.size ?? (minFontSize + (maxFontSize - minFontSize) * (0.4 + 0.6 * Math.abs(Math.sin(seed))));
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = cellW * col + cellW / 2;
+      const y = cellH * row + cellH / 2;
+      const fontSize = tag.size ?? (minFontSize + (maxFontSize - minFontSize) * (0.4 + 0.6 * Math.abs(Math.sin(i * 1.7))));
 
       ctx.save();
       ctx.globalAlpha *= tagProgress;
       ctx.font = `bold ${fontSize}px ${font}`;
-      ctx.fillStyle = tag.color ?? theme.chartColors[i % theme.chartColors.length];
+      const textWidth = ctx.measureText(tag.text ?? '').width;
+      const padX = fontSize * 0.5;
+      const padY = fontSize * 0.35;
+      const pillW = textWidth + padX * 2;
+      const pillH = fontSize + padY * 2;
+      const pillX = x - pillW / 2;
+      const pillY = y - pillH / 2;
+      const tagColor = tag.color ?? theme.chartColors[i % theme.chartColors.length];
+      const r = pillH / 2;
+
+      ctx.beginPath();
+      ctx.moveTo(pillX + r, pillY);
+      ctx.lineTo(pillX + pillW - r, pillY);
+      ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + r);
+      ctx.lineTo(pillX + pillW, pillY + pillH - r);
+      ctx.quadraticCurveTo(pillX + pillW, pillY + pillH, pillX + pillW - r, pillY + pillH);
+      ctx.lineTo(pillX + r, pillY + pillH);
+      ctx.quadraticCurveTo(pillX, pillY + pillH, pillX, pillY + pillH - r);
+      ctx.lineTo(pillX, pillY + r);
+      ctx.quadraticCurveTo(pillX, pillY, pillX + r, pillY);
+      ctx.closePath();
+      ctx.fillStyle = withAlpha(tagColor, 0.15);
+      ctx.fill();
+      ctx.strokeStyle = withAlpha(tagColor, 0.5);
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = tagColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(tag.text ?? '', x, y);
@@ -1443,19 +1585,20 @@ export function drawProgressTimeline(
 
   // Title
   if (props.title) {
-    ctx.font = `bold ${theme.titleFontSize * 0.7}px ${font}`;
+    ctx.font = `bold ${theme.titleFontSize * 0.75}px ${font}`;
     ctx.fillStyle = theme.textColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(props.title, canvas.width / 2, canvas.height * 0.06);
+    ctx.fillText(props.title, canvas.width / 2, canvas.height * 0.07);
   }
 
   const isHorizontal = layout === 'horizontal';
-  const startX = isHorizontal ? canvas.width * 0.1 : canvas.width / 2;
-  const endX = isHorizontal ? canvas.width * 0.9 : canvas.width / 2;
-  const startY = isHorizontal ? canvas.height * 0.45 : canvas.height * 0.15;
-  const endY = isHorizontal ? canvas.height * 0.45 : canvas.height * 0.85;
+  const startX = isHorizontal ? canvas.width * 0.15 : canvas.width / 2;
+  const endX = isHorizontal ? canvas.width * 0.85 : canvas.width / 2;
+  const startY = isHorizontal ? canvas.height * 0.48 : canvas.height * 0.2;
+  const endY = isHorizontal ? canvas.height * 0.48 : canvas.height * 0.8;
   const lineLen = nodes.length - 1;
+  const nodeR = isHorizontal ? 32 : 36;
 
   // Draw line
   const drawProgress = props.animation === 'fadeIn' ? 1 : progress;
@@ -1463,7 +1606,7 @@ export function drawProgressTimeline(
 
   // Background line
   ctx.strokeStyle = withAlpha(theme.textColor, 0.15);
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 8;
   ctx.beginPath();
   ctx.moveTo(startX, startY);
   if (isHorizontal) ctx.lineTo(endX, startY);
@@ -1474,8 +1617,11 @@ export function drawProgressTimeline(
   if (showProgress) {
     const progX = isHorizontal ? startX + (endX - startX) * drawProgress : startX;
     const progY = isHorizontal ? startY : startY + (endY - startY) * drawProgress;
-    ctx.strokeStyle = theme.primaryColor;
-    ctx.lineWidth = 4;
+    const grad = ctx.createLinearGradient(startX, startY, endX, isHorizontal ? startY : endY);
+    grad.addColorStop(0, theme.primaryColor);
+    grad.addColorStop(1, theme.secondaryColor);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 8;
     ctx.beginPath();
     ctx.moveTo(startX, startY);
     ctx.lineTo(progX, progY);
@@ -1488,39 +1634,79 @@ export function drawProgressTimeline(
     const t = lineLen > 0 ? i / lineLen : 0;
     const x = isHorizontal ? startX + (endX - startX) * t : startX;
     const y = isHorizontal ? startY : startY + (endY - startY) * t;
-    const color = node.color ?? theme.primaryColor;
+    const color = node.color ?? theme.chartColors[i % theme.chartColors.length];
     const isPassed = showProgress && t <= drawProgress;
 
+    // Node glow ring
+    if (isPassed) {
+      ctx.strokeStyle = withAlpha(color, 0.3);
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      if (nodeShape === 'circle') {
+        ctx.arc(x, y, nodeR + 8, 0, Math.PI * 2);
+      } else if (nodeShape === 'diamond') {
+        const r2 = nodeR + 8;
+        ctx.moveTo(x, y - r2);
+        ctx.lineTo(x + r2, y);
+        ctx.lineTo(x, y + r2);
+        ctx.lineTo(x - r2, y);
+        ctx.closePath();
+      }
+      ctx.stroke();
+    }
+
     // Node
-    ctx.fillStyle = isPassed ? color : withAlpha(theme.textColor, 0.2);
+    ctx.fillStyle = isPassed ? color : withAlpha(theme.textColor, 0.15);
     if (nodeShape === 'circle') {
       ctx.beginPath();
-      ctx.arc(x, y, 20, 0, Math.PI * 2);
+      ctx.arc(x, y, nodeR, 0, Math.PI * 2);
       ctx.fill();
+      // Inner highlight
+      if (isPassed) {
+        ctx.fillStyle = withAlpha('#ffffff', 0.3);
+        ctx.beginPath();
+        ctx.arc(x - nodeR * 0.25, y - nodeR * 0.25, nodeR * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
     } else if (nodeShape === 'diamond') {
       ctx.beginPath();
-      ctx.moveTo(x, y - 20);
-      ctx.lineTo(x + 20, y);
-      ctx.lineTo(x, y + 20);
-      ctx.lineTo(x - 20, y);
+      ctx.moveTo(x, y - nodeR);
+      ctx.lineTo(x + nodeR, y);
+      ctx.lineTo(x, y + nodeR);
+      ctx.lineTo(x - nodeR, y);
       ctx.closePath();
       ctx.fill();
     } else {
-      ctx.fillRect(x - 18, y - 18, 36, 36);
+      ctx.fillRect(x - nodeR, y - nodeR, nodeR * 2, nodeR * 2);
     }
 
-    // Label
-    ctx.font = `${theme.bodyFontSize * 0.5}px ${font}`;
-    ctx.fillStyle = isPassed ? theme.textColor : theme.textSecondaryColor;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = isHorizontal ? 'top' : 'middle';
-    const labelY = isHorizontal ? y + 35 : y;
-    const labelX = isHorizontal ? x : x + 35;
+    // Label with card background
+    const labelText = node.label ?? '';
+    const labelFontSize = theme.bodyFontSize * 0.85;
+    ctx.font = `bold ${labelFontSize}px ${font}`;
+    const labelY = isHorizontal ? y + nodeR + 28 : y;
+    const labelX = isHorizontal ? x : x + nodeR + 24;
     ctx.textAlign = isHorizontal ? 'center' : 'left';
-    ctx.fillText(node.label ?? '', labelX, labelY);
+
+    // Card background for label
+    const textWidth = ctx.measureText(labelText).width;
+    const padX = 20;
+    const padY = 10;
+    const cardX = isHorizontal ? x - textWidth / 2 - padX : labelX - padX;
+    const cardY = isHorizontal ? labelY - padY : labelY - labelFontSize / 2 - padY;
+    const cardW = textWidth + padX * 2;
+    const cardH = labelFontSize + padY * 2;
+    ctx.fillStyle = withAlpha(color, isPassed ? 0.15 : 0.05);
+    roundRectPath(ctx, cardX, cardY, cardW, cardH, 8);
+    ctx.fill();
+
+    ctx.fillStyle = isPassed ? theme.textColor : theme.textSecondaryColor;
+    ctx.textBaseline = isHorizontal ? 'top' : 'middle';
+    ctx.fillText(labelText, labelX, labelY);
     if (node.time) {
+      ctx.font = `${labelFontSize * 0.8}px ${font}`;
       ctx.fillStyle = theme.textSecondaryColor;
-      ctx.fillText(node.time, labelX, labelY + (theme.bodyFontSize * 0.6));
+      ctx.fillText(node.time, labelX, labelY + labelFontSize + 6);
     }
   });
 }
